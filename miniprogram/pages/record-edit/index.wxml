@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="notice">学习内容为必填。保存后会同步到学生端上课记录，并进入月度课时统计基础数据。</view>
+  <view class="field"><text class="label">学习内容</text><textarea class="textarea" value="{{form.content}}" data-key="content" bindinput="onInput" placeholder="本节课实际教授内容、练习重点或掌握情况" /></view>
+  <view class="field"><text class="label">课程进度</text><input class="input" value="{{form.progress}}" data-key="progress" bindinput="onInput" placeholder="例如：八分音符 82 BPM" /></view>
+  <view class="field"><text class="label">课程难度</text><input class="input" value="{{form.difficulty}}" data-key="difficulty" bindinput="onInput" placeholder="简单 / 适中 / 偏难" /></view>
+  <view class="field"><text class="label">课后作业</text><input class="input" value="{{form.homework}}" data-key="homework" bindinput="onInput" placeholder="课后练习安排" /></view>
+  <view class="field"><text class="label">备注</text><textarea class="textarea" value="{{form.notes}}" data-key="notes" bindinput="onInput" placeholder="可选" /></view>
+  <button class="btn" bindtap="submit">保存记录</button>
+</view>

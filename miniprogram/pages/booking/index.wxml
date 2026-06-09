@@ -1,0 +1,22 @@
+<view class="page">
+  <view class="section-title">选择课程</view>
+  <view class="tabs">
+    <view wx:for="{{courses}}" wx:key="id" class="tab {{activeCourse.id === item.id ? 'active' : ''}}" data-index="{{index}}" bindtap="selectCourse">
+      {{item.course}} · {{item.teacher_name}}
+    </view>
+  </view>
+  <view class="notice">{{rules.openHours}}；{{rules.release}}；{{rules.selfChange}}。灰色时段表示已约、未释放或不可预约。</view>
+
+  <view class="section-title">选择日期</view>
+  <view class="tabs">
+    <view wx:for="{{dates}}" wx:key="date" class="tab {{activeDate === item.date ? 'active' : ''}}" data-date="{{item.date}}" bindtap="selectDate">{{item.label}}</view>
+  </view>
+
+  <view class="section-title">可预约时间</view>
+  <view class="slot-grid">
+    <view wx:for="{{slots}}" wx:key="startTime" class="slot {{item.status}}" data-slot="{{item}}" bindtap="tapSlot">
+      <view class="card-title">{{item.startTime}} {{item.endTime ? '-' : ''}} {{item.endTime}}</view>
+      <view class="meta">{{item.statusText}}</view>
+    </view>
+  </view>
+</view>

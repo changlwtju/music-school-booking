@@ -1,0 +1,14 @@
+<view class="page">
+  <view class="section-title">选择老师</view>
+  <view class="tabs">
+    <view wx:for="{{teachers}}" wx:key="id" class="tab {{activeTeacher.id === item.id ? 'active' : ''}}" data-index="{{index}}" bindtap="selectTeacher">{{item.name}}</view>
+  </view>
+  <view class="notice">{{schedule.notice}}</view>
+  <view class="section-title">{{schedule.date}} 课程</view>
+  <block wx:for="{{schedule.appointments}}" wx:key="id">
+    <view class="card" data-id="{{item.id}}" bindlongpress="editRecord">
+      <view class="row"><view class="card-title">{{item.start_time}} {{item.student_name}}</view><view class="pill">{{item.course}}</view></view>
+      <view class="meta">{{item.campus_name}} · {{item.modeText}} · {{item.statusText}}</view>
+    </view>
+  </block>
+</view>

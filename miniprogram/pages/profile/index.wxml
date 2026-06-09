@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="topbar">
+    <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
+    <view>
+      <view class="brand-title">{{summary.student.name}}</view>
+      <view class="brand-subtitle">{{summary.student.campus_name}} · {{summary.student.phone}}</view>
+    </view>
+  </view>
+  <view class="card">
+    <view class="row"><text>报名日期</text><text>{{summary.student.enrolled_at}}</text></view>
+    <view class="row"><text>学习期限</text><text>{{summary.student.expires_at}}</text></view>
+    <view class="row"><text>分期状态</text><text>{{paymentText}}</text></view>
+  </view>
+  <view class="section-title">当前学习课程</view>
+  <block wx:for="{{summary.contracts}}" wx:key="id">
+    <view class="card">
+      <view class="row"><view class="card-title">{{item.course}}</view><view class="pill light">{{item.modeText}}</view></view>
+      <view class="meta">进度：{{item.progress}}</view>
+      <view class="meta" wx:if="{{item.mode === 'fixed20'}}">剩余课时：{{item.remaining_lessons}}</view>
+      <view class="meta" wx:else>册别：{{item.book_level}} · 有效 {{item.valid_lessons}} / 无效 {{item.invalid_lessons}}</view>
+    </view>
+  </block>
+  <button class="btn" bindtap="goRecords">查看上课记录</button>
+</view>

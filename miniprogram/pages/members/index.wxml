@@ -1,0 +1,15 @@
+<view class="page">
+  <view class="field"><input class="input" placeholder="搜索姓名、手机号、课程" value="{{keyword}}" bindinput="onInput" confirm-type="search" bindconfirm="load" /></view>
+  <view class="tabs">
+    <view class="tab active">在读会员</view>
+    <view class="tab">已到期会员</view>
+    <view class="tab">分期会员</view>
+  </view>
+  <block wx:for="{{members}}" wx:key="id">
+    <view class="card">
+      <view class="row"><view class="card-title {{item.payment_status === 'installment' ? 'installment' : ''}}">{{item.name}}</view><view class="pill light">{{item.course}}</view></view>
+      <view class="meta">{{item.phone}} · {{item.campus_name}}</view>
+      <view class="meta">报名 {{item.enrolled_at}} · 进度 {{item.progress}}</view>
+    </view>
+  </block>
+</view>

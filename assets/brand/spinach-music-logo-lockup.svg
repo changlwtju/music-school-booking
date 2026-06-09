@@ -1,0 +1,77 @@
+<svg width="1600" height="720" viewBox="0 0 1600 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="720" fill="#FFF9EC"/>
+
+  <g transform="translate(300 110)">
+    <path
+      d="M106 7C88 8 82 28 68 48C56 66 31 75 26 99C20 126 37 146 51 166C68 191 70 214 54 224C43 231 25 232 10 246C-13 269 -11 306 10 329C31 352 62 369 100 363C132 358 154 340 174 323C190 310 213 312 230 329"
+      stroke="#6FA35D"
+      stroke-width="9"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path
+      d="M106 7C126 8 136 27 141 50C148 79 164 90 184 103C207 118 213 149 195 175C178 199 154 217 154 251C154 264 158 275 166 289"
+      stroke="#6FA35D"
+      stroke-width="9"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path
+      d="M99 59C84 102 80 147 88 191C93 221 105 251 118 288"
+      stroke="#6FA35D"
+      stroke-width="6"
+      stroke-linecap="round"/>
+    <path
+      d="M131 124C104 135 88 157 83 190"
+      stroke="#6FA35D"
+      stroke-width="6"
+      stroke-linecap="round"/>
+
+    <g transform="translate(65 135) rotate(-10)">
+      <path
+        d="M97 54L203 24C207 23 211 26 210 31L180 181C176 202 154 219 127 219C103 219 84 207 84 191C84 175 103 160 127 160C140 160 152 164 160 170L180 72L113 91L89 214C85 236 62 253 35 253C11 253 -8 241 -8 225C-8 208 11 194 35 194C48 194 60 198 68 204L91 63C92 59 94 55 97 54Z"
+        fill="#0F5A55"/>
+    </g>
+
+    <path
+      d="M165 348C178 334 194 326 207 329C216 331 223 337 229 347"
+      stroke="#6FA35D"
+      stroke-width="6"
+      stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(795 146)">
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M47 58V140C47 157 27 169 6 165C-13 161 -24 148 -17 136C-10 123 10 119 28 125C39 129 47 135 47 140" stroke="#0F5A55" stroke-width="4"/>
+      <path d="M128 34V116C128 133 108 145 87 141C68 137 57 124 64 112C71 99 91 95 109 101C120 105 128 111 128 116" stroke="#35A7A2" stroke-width="3.5"/>
+      <path d="M46 59C70 29 104 30 128 56" stroke="#0F5A55" stroke-width="3.5"/>
+      <path d="M138 17C164 -8 203 -4 223 28" stroke="#35A7A2" stroke-width="3.5"/>
+      <path d="M128 33V12" stroke="#35A7A2" stroke-width="3.5"/>
+    </g>
+
+    <text
+      x="0"
+      y="238"
+      fill="#0F5A55"
+      font-size="94"
+      font-weight="800"
+      letter-spacing="6"
+      font-family="'Montserrat','Avenir Next','Helvetica Neue',Arial,sans-serif">MODERN</text>
+    <text
+      x="0"
+      y="344"
+      fill="#5F9857"
+      font-size="94"
+      font-weight="800"
+      letter-spacing="6"
+      font-family="'Montserrat','Avenir Next','Helvetica Neue',Arial,sans-serif">MUSIC</text>
+    <path d="M0 354H203" stroke="#F4B737" stroke-width="10" stroke-linecap="round"/>
+    <path d="M226 354H374" stroke="#35A7A2" stroke-width="10" stroke-linecap="round"/>
+    <text
+      x="0"
+      y="437"
+      fill="#557B65"
+      font-size="52"
+      font-weight="700"
+      letter-spacing="2"
+      font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif">菠菜现代音乐</text>
+  </g>
+</svg>

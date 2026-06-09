@@ -1,0 +1,2 @@
+.qr { min-height: 520rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20rpx; }
+.big { width: 220rpx; height: 220rpx; border-radius: 8rpx; }

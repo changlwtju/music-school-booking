@@ -1,0 +1,60 @@
+<svg width="960" height="420" viewBox="0 0 960 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="420" rx="56" fill="#FFF9EC"/>
+
+  <g transform="translate(138 58)">
+    <path
+      d="M177 20C128 61 105 111 116 164C69 174 38 217 44 274C52 345 113 399 189 404C271 409 337 358 348 287C357 230 326 185 279 170C288 111 257 63 177 20Z"
+      fill="#6FA35D"
+      fill-opacity="0.08"/>
+    <path
+      d="M177 20C128 61 105 111 116 164C69 174 38 217 44 274C52 345 113 399 189 404C271 409 337 358 348 287C357 230 326 185 279 170C288 111 257 63 177 20Z"
+      stroke="#5F9857"
+      stroke-width="17"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path
+      d="M177 46C187 116 191 187 185 257C181 309 175 359 166 397"
+      stroke="#5F9857"
+      stroke-width="9"
+      stroke-linecap="round"/>
+
+    <g transform="rotate(-7 207 220)">
+      <path
+        d="M167 114V276C154 267 134 263 114 267C82 273 59 297 64 322C69 347 100 362 132 356C162 351 184 329 184 304V161C217 181 242 206 257 237C262 248 276 251 284 243C291 237 292 226 287 216C266 171 225 136 174 111C171 110 168 111 167 114Z"
+        fill="#2D554B"/>
+      <path
+        d="M267 92V243C256 235 239 232 220 235C191 241 170 263 175 286C179 309 208 322 237 317C265 312 284 292 284 269V137C314 155 337 179 351 207C356 217 369 219 376 212C382 206 383 196 379 187C359 146 322 113 275 90C272 89 269 90 267 92Z"
+        fill="#3D7466"/>
+    </g>
+
+    <path
+      d="M297 70C322 82 343 101 357 125"
+      stroke="#35A7A2"
+      stroke-width="10"
+      stroke-linecap="round"/>
+    <circle cx="325" cy="343" r="12" fill="#F4B737"/>
+  </g>
+
+  <g transform="translate(536 160)">
+    <text
+      x="0"
+      y="0"
+      dominant-baseline="middle"
+      fill="#2D554B"
+      font-size="44"
+      font-weight="700"
+      letter-spacing="8"
+      font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif">MODERN</text>
+    <text
+      x="0"
+      y="64"
+      dominant-baseline="middle"
+      fill="#5F9857"
+      font-size="44"
+      font-weight="700"
+      letter-spacing="8"
+      font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif">MUSIC</text>
+    <path d="M4 106H168" stroke="#F4B737" stroke-width="8" stroke-linecap="round"/>
+    <path d="M190 106H276" stroke="#35A7A2" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>

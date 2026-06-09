@@ -1,0 +1,21 @@
+{
+  "name": "spinach-music-booking-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.13",
+    "express": "^4.21.2",
+    "nanoid": "^5.1.5",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

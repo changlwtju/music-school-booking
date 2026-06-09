@@ -1,0 +1,49 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#FFF9EC"/>
+
+  <g transform="translate(0 2)">
+    <path
+      d="M237 54C216 56 208 80 190 99C174 116 152 123 155 149C158 174 189 186 197 210C205 233 190 242 169 247C143 253 128 278 134 302C139 321 156 331 158 348C160 370 139 383 130 405C117 438 145 467 184 470C230 473 260 438 287 410C300 397 319 399 329 415"
+      stroke="#6FA35D"
+      stroke-width="8"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path
+      d="M237 54C259 56 264 83 273 101C283 122 309 126 316 150C323 174 304 192 287 210C271 228 265 247 272 270"
+      stroke="#6FA35D"
+      stroke-width="8"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <path
+      d="M235 93C221 132 219 174 227 214C232 242 244 267 255 296"
+      stroke="#6FA35D"
+      stroke-width="5"
+      stroke-linecap="round"/>
+    <path
+      d="M270 146C246 156 231 176 227 207"
+      stroke="#6FA35D"
+      stroke-width="5"
+      stroke-linecap="round"/>
+
+    <path
+      d="M255 215L334 196C338 195 342 198 341 202L319 311C316 329 298 343 275 345C255 347 239 337 238 323C237 309 252 296 272 294C283 293 293 295 300 300L314 230L264 242L247 332C244 350 225 364 202 366C182 367 166 358 165 344C164 330 179 317 199 315C210 314 220 316 227 321L244 224C245 220 251 216 255 215Z"
+      fill="#0F5A55"/>
+  </g>
+
+  <g>
+    <path d="M82 394H110" stroke="#6FA35D" stroke-width="3" stroke-linecap="round"/>
+    <text
+      x="256"
+      y="399"
+      dominant-baseline="middle"
+      text-anchor="middle"
+      fill="#0F5A55"
+      font-size="22"
+      font-weight="700"
+      letter-spacing="6"
+      textLength="222"
+      lengthAdjust="spacing"
+      font-family="'Montserrat','Avenir Next','Helvetica Neue',Arial,sans-serif">MODERN MUSIC</text>
+    <path d="M402 394H430" stroke="#6FA35D" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

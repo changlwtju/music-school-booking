@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/student-home/index",
+    "pages/booking/index",
+    "pages/campuses/index",
+    "pages/profile/index",
+    "pages/contracts/index",
+    "pages/records/index",
+    "pages/teacher-home/index",
+    "pages/teacher-schedule/index",
+    "pages/members/index",
+    "pages/payment-code/index",
+    "pages/record-edit/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "菠菜现代音乐",
+    "navigationBarBackgroundColor": "#539D73",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F7F4EE"
+  },
+  "style": "v2"
+}

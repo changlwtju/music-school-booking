@@ -1,0 +1,27 @@
+<view class="page">
+  <view class="topbar">
+    <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
+    <view>
+      <view class="brand-title">菠菜现代音乐</view>
+      <view class="brand-subtitle">课程预约 · 上课记录 · 校区服务</view>
+    </view>
+  </view>
+  <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="aspectFill" />
+  <view class="notice">授课时间 12:00-20:00；次日课表前一天 20:00 后释放；距离开课不足 1.5 小时请联系老师处理。</view>
+
+  <view class="section-title">学生服务</view>
+  <view class="grid">
+    <view class="entry" bindtap="goBooking"><view class="entry-icon">♪</view><view class="entry-title">约课</view><view class="entry-desc">选择固定老师课表</view></view>
+    <view class="entry" bindtap="goCampuses"><view class="entry-icon">⌖</view><view class="entry-title">校区地址</view><view class="entry-desc">查看门店与导航</view></view>
+    <view class="entry" bindtap="goProfile"><view class="entry-icon">◎</view><view class="entry-title">我的信息</view><view class="entry-desc">课时与学习进度</view></view>
+    <view class="entry" bindtap="goContracts"><view class="entry-icon">□</view><view class="entry-title">合同</view><view class="entry-desc">查看课程合同</view></view>
+  </view>
+
+  <view class="section-title">近期预约</view>
+  <block wx:for="{{summary.nextAppointments}}" wx:key="id">
+    <view class="card">
+      <view class="row"><view class="card-title">{{item.course}}</view><view class="pill">{{item.statusText}}</view></view>
+      <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.teacher_name}} · {{item.campus_name}}</view>
+    </view>
+  </block>
+</view>

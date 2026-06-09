@@ -1,0 +1,16 @@
+<view class="page">
+  <view class="topbar">
+    <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
+    <view>
+      <view class="brand-title">老师工作台</view>
+      <view class="brand-subtitle">今日课表 · 会员 · 上课记录</view>
+    </view>
+  </view>
+  <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="aspectFill" />
+  <view class="grid">
+    <view class="entry" bindtap="goSchedule"><view class="entry-icon">◷</view><view class="entry-title">今日课表</view><view class="entry-desc">查看门店排课</view></view>
+    <view class="entry" bindtap="goMembers"><view class="entry-icon">◎</view><view class="entry-title">会员管理</view><view class="entry-desc">搜索学员信息</view></view>
+    <view class="entry" bindtap="goCampuses"><view class="entry-icon">⌖</view><view class="entry-title">门店地图</view><view class="entry-desc">地址与导航</view></view>
+    <view class="entry" bindtap="goPayment"><view class="entry-icon">▣</view><view class="entry-title">收款码</view><view class="entry-desc">缴费入口预留</view></view>
+  </view>
+</view>
