@@ -6,7 +6,10 @@
       <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.teacher_name}}</view>
       <view class="meta">内容：{{item.content}}</view>
       <view class="meta">进度：{{item.progress}}</view>
+      <view class="meta">难度：{{item.difficulty}}</view>
       <view class="meta">作业：{{item.homework}}</view>
+      <view class="meta" wx:if="{{item.notes}}">备注：{{item.notes}}</view>
     </view>
   </block>
+  <view wx:if="{{!records.length}}" class="empty">暂无上课记录</view>
 </view>

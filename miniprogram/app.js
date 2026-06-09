@@ -1,8 +1,11 @@
 App({
   globalData: {
-    apiBase: 'http://localhost:3010',
+    apiBase: '',
     studentId: 'student-chen',
     teacherId: 'teacher-lin',
-    role: 'student'
+    campusId: 'campus-main',
+    lastSyncedAppointmentId: '',
+    lastSyncedDate: '',
+    role: ''
   }
 });

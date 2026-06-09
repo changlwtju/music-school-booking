@@ -11,4 +11,5 @@
       <view class="meta">当前进度：{{item.progress}}</view>
     </view>
   </block>
+  <view wx:if="{{!contracts.length}}" class="empty">暂无合同信息</view>
 </view>

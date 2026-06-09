@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/role-entry/index",
     "pages/student-home/index",
     "pages/booking/index",
     "pages/campuses/index",
@@ -8,6 +9,7 @@
     "pages/records/index",
     "pages/teacher-home/index",
     "pages/teacher-schedule/index",
+    "pages/teacher-records/index",
     "pages/members/index",
     "pages/payment-code/index",
     "pages/record-edit/index"

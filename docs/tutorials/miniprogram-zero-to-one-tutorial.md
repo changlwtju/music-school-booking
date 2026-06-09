@@ -165,7 +165,9 @@
 
 - 老师首页。
 - 今日课表。
+- 老师按日期切换课表。
 - 会员管理。
+- 上课记录列表。
 - 上课记录录入。
 - 门店地图。
 - 收款码。
@@ -173,7 +175,6 @@
 待继续完成：
 
 - 课程详情页。
-- 老师按日期切换课表。
 - 会员详情页。
 - 收款码后台配置。
 
@@ -378,7 +379,8 @@ GET  /stats/teacher-monthly
 小程序实现：
 
 - 技术栈：原生微信小程序，WXML + WXSS + JavaScript。
-- API 地址：`miniprogram/app.js` 中的 `apiBase`，当前为 `http://localhost:3010`。
+- API 地址：`miniprogram/app.js` 中的 `apiBase`，当前前端原型阶段默认为空字符串，优先走本地 mock 数据。
+- 需要联调真实后端时，可将 `apiBase` 改为 `http://localhost:3010` 或服务器 API 地址。
 - 小程序请求封装在 `miniprogram/utils/request.js`。
 - 后端不可用时，会自动走 `miniprogram/utils/mock.js` 中的演示数据，便于先查看页面。
 
@@ -421,6 +423,7 @@ miniprogram/pages/records/
 ```text
 miniprogram/pages/teacher-home/
 miniprogram/pages/teacher-schedule/
+miniprogram/pages/teacher-records/
 miniprogram/pages/members/
 miniprogram/pages/payment-code/
 miniprogram/pages/record-edit/
@@ -428,10 +431,11 @@ miniprogram/pages/record-edit/
 
 老师端当前能力：
 
-- 工作台展示今日课表、会员管理、门店地图和收款码入口。
-- 今日课表支持切换同店老师查看排课。
+- 工作台展示今日课表、会员管理、上课记录、门店地图和收款码入口。
+- 今日课表支持切换同店老师和日期查看排课。
 - 老师长按课表课程可进入上课记录录入页。
-- 会员管理支持按姓名、手机号、课程搜索。
+- 上课记录页汇总展示老师已录入的学习内容、课程进度、难度、作业和备注。
+- 会员管理支持按姓名、手机号、课程搜索，并支持在读、已到期、分期筛选。
 - 分期会员姓名用红色展示。
 - 收款码页先做结构预留，后续接正式二维码配置。
 - 上课记录录入页要求学习内容必填，并可录入课程进度、难度、作业和备注。
@@ -514,7 +518,6 @@ npm-debug.log*
 - 完整改课页面和改课历史记录。
 - 合同附件上传与查看。
 - 收款码配置和缴费记录。
-- 老师按日期切换课表。
 - 会员详情页。
 - 管理员代约课、代改课、代取消的操作日志。
 - 预约并发在真实数据库中的事务锁或唯一约束方案。
@@ -819,6 +822,158 @@ npm-debug.log*
 
 - 更新 `docs/requirements/product-requirements-draft.md` 的项目背景、品牌与视觉风格、技术与阶段安排和已确认决策。
 
+### 2026-06-09：同步前端原型与教程
+
+本次目标：
+
+- 边开发小程序边维护教程，避免代码实现和开发记录脱节。
+- 根据已确认需求继续优化学生端与老师端前端原型。
+- 补齐老师端首页中遗漏的“上课记录”入口。
+
+已落实的前端调整：
+
+- 新增身份入口页，进入小程序后先选择学生端或老师端。
+- 将课程品类统一收敛为钢琴、吉他、架子鼓，并在入口页、学生首页和老师工作台展示。
+- 学生端约课页只展示学生已报名课程及对应固定老师，不提供自由选择其他老师入口。
+- 学生端约课说明补充授课时间 12:00-20:00、45 分钟课节、周一全店休息、17:15-17:45 晚餐休息、前一天 20:00 释放次日课表和 1.5 小时改课规则。
+- 老师端今日课表支持按同店老师和日期查看，说明区强调同店课表可查看但不可代约课。
+- 老师端工作台补齐“上课记录”入口，新增 `miniprogram/pages/teacher-records/` 汇总展示已录入记录。
+- 上课记录录入仍从今日课表长按对应课程进入，学习内容必填。
+- 学生端我的信息补充负责老师、学习状态、用户 ID、最近上课内容和备注。
+- 学生端与老师端关键列表补充空状态，避免无数据时像页面异常。
+- 本地 mock 数据扩展为多学生、多老师、多校区、多合同、多预约和多上课记录，并支持按老师、日期、会员状态筛选。
+
+实现文件：
+
+- `miniprogram/pages/role-entry/`
+- `miniprogram/pages/student-home/`
+- `miniprogram/pages/booking/`
+- `miniprogram/pages/profile/`
+- `miniprogram/pages/records/`
+- `miniprogram/pages/teacher-home/`
+- `miniprogram/pages/teacher-schedule/`
+- `miniprogram/pages/teacher-records/`
+- `miniprogram/pages/members/`
+- `miniprogram/utils/mock.js`
+
+### 2026-06-09 晚间：本地拉取、导入调试与前端原型完善
+
+本次目标：
+
+- 将 GitHub 仓库完整拉取到本地项目目录。
+- 在微信开发者工具中导入并跑通小程序。
+- 处理本地预览时出现的大量接口连接错误。
+- 按已确认需求继续补齐学生端和老师端前端体验。
+- 将今晚开发过程同步记录到本教程，后续继续保持边开发边更新。
+
+本地项目与导入：
+
+- 将 `changlwtju/music-school-booking` 克隆到 `/Users/lagransun/workspace/music-school-booking`。
+- 微信开发者工具导入目录使用 `miniprogram/`。
+- 小程序导入时选择“不使用云服务”，因为当前项目后端为本地或服务器 API，不使用微信云开发。
+- 当前项目名读取为 `spinach-music-booking`，AppID 可先使用测试号或游客测试值，正式上线前再替换为真实小程序 AppID。
+
+本地后端与接口调试：
+
+- 安装后端依赖：`cd backend && npm install`。
+- 初始化示例数据：`npm run seed`。
+- 验证本地后端默认监听 `http://localhost:3010`。
+- 用 `/campuses` 和 `/students/student-chen/summary` 验证接口可返回数据。
+- 发现微信开发者工具在后端未启动时会持续报 `ERR_CONNECTION_REFUSED`。
+- 为了让前端原型不依赖本地后端，临时将 `miniprogram/app.js` 中 `apiBase` 设为空字符串。
+- 更新 `miniprogram/utils/request.js`，当 `apiBase` 为空时直接走 `mockRequest`，避免本地预览阶段控制台刷连接失败。
+
+首页与身份入口：
+
+- 新增 `miniprogram/pages/role-entry/`。
+- 调整 `miniprogram/app.json`，让小程序启动后先进入身份入口页。
+- 身份入口页展示学生端和老师端两个入口。
+- 学生进入学生端首页，老师进入老师工作台。
+- 入口页展示当前三类主课：钢琴、吉他、架子鼓。
+
+课程与业务规则同步：
+
+- 根据需求文档确认，当前主要课程为钢琴、吉他、架子鼓。
+- 将 mock 中不符合本期主课范围的“声乐”替换为“钢琴”。
+- 新增课程目录 mock 接口 `/courses`，供入口页、学生首页和老师工作台展示。
+- 在学生首页和约课页补充核心规则：授课时间 12:00-20:00、每节课 45 分钟、周一全店休息、17:15-17:45 晚餐休息、次日课表前一天 20:00 后释放、距离开课不足 1.5 小时不可自助改课。
+- mock 课表中加入周一全店休息规则，周一所有时段返回休息状态。
+
+学生端优化：
+
+- 学生端首页展示品牌、主课标签、规则提示、学生服务入口和近期预约。
+- 学生端约课页改为“已报名课程与固定老师”选择，不提供自由选择任意老师。
+- 学生多门课程时可在已报名课程中切换，不同课程对应不同固定老师。
+- 约课页展示课程模式：20 课时固定课时制或按册学习。
+- 约课页按老师和日期动态返回不同课表。
+- 预约成功后，mock 会写入本地内存预约记录，并让对应时段变为已被预约。
+- 学生端我的信息补充负责老师、学习状态、用户 ID、最近上课内容和备注。
+- 学生上课记录页补充课程难度和备注字段。
+- 学生首页、约课、合同、上课记录、校区等页面补充空状态提示。
+
+老师端优化：
+
+- 老师工作台展示主课标签和核心入口。
+- 老师端入口补齐为：今日课表、会员管理、上课记录、门店地图、收款码。
+- 今日课表默认展示今天，支持切换同店老师和日期。
+- 老师 tab 显示“老师名 · 授课课程”。
+- 老师端课表说明区强调同店老师课表可查看但不可代约课，课后长按课程录入学习内容。
+- 老师端课表课程卡片展示学习模式、课时进度或册别、课程状态。
+- 新增 `miniprogram/pages/teacher-records/`，用于汇总展示老师已录入的上课记录。
+- 保留课后录入主流程：老师在今日课表中长按对应课程，进入 `record-edit` 录入学习内容。
+- 会员管理页支持搜索，并让在读会员、已到期会员、分期会员筛选真正参与请求。
+- 分期会员姓名使用红色展示。
+- 收款码页从纯硬编码占位改为通过 `/payment-code` mock 配置加载，后续可接正式二维码配置。
+
+mock 数据与交互：
+
+- 重构 `miniprogram/utils/mock.js`，从单一学生/老师扩展为多学生、多老师、多校区、多合同、多预约、多上课记录。
+- 使用相对日期生成 mock 数据，减少固定日期过期导致的演示问题。
+- 支持按 `teacherId + date` 生成不同可预约时段。
+- 支持按老师、日期查询老师课表。
+- 支持按老师、会员状态、关键词筛选会员。
+- 支持老师端按 `teacherId` 查询上课记录。
+- 支持保存上课记录后写入 mock，并同步影响后续记录列表。
+
+无服务器联动模拟：
+
+- 当前没有真实服务器后台时，不能实现跨设备、跨微信用户的真实同步。
+- 为了让前端原型更接近真实业务效果，在同一个小程序运行环境内使用共享 mock 数据模拟学生端和老师端联动。
+- 学生端预约成功后，mock 会把预约写入同一份 `appointments` 数据。
+- 老师端今日课表重新读取对应老师和日期时，可以看到学生端刚创建的预约。
+- 学生端预约成功后会显示“预约已同步到老师端”的反馈，并可直接跳转查看老师课表。
+- 老师端工作台新增“同步动态”，读取 `/sync-events` 展示学生预约和上课记录同步消息。
+- 老师端今日课表新增统计卡片、刷新按钮和刚同步课程高亮，用于演示预约同步效果。
+- 这套联动只适合本地演示和流程验证；真实上线仍需要服务器 API、数据库或微信云开发作为共享数据源。
+
+已验证内容：
+
+- `miniprogram/app.json` 和新增页面 JSON 均可正常解析。
+- `/courses` 返回钢琴、吉他、架子鼓。
+- `/teachers?campusId=campus-main` 返回同店老师及其课程。
+- `/schedule/slots` 在周一会返回全店休息状态。
+- `/lesson-records?teacherId=teacher-lin` 能返回老师端上课记录数据。
+- 模拟学生端创建预约后，老师端对应老师课表可以查询到同一条预约，并生成同步动态。
+
+今晚新增或重点修改的文件：
+
+- `miniprogram/pages/role-entry/`
+- `miniprogram/pages/teacher-records/`
+- `miniprogram/pages/student-home/`
+- `miniprogram/pages/booking/`
+- `miniprogram/pages/profile/`
+- `miniprogram/pages/records/`
+- `miniprogram/pages/teacher-home/`
+- `miniprogram/pages/teacher-schedule/`
+- `miniprogram/pages/members/`
+- `miniprogram/pages/payment-code/`
+- `miniprogram/utils/mock.js`
+- `miniprogram/utils/request.js`
+- `miniprogram/app.js`
+- `miniprogram/app.json`
+- `miniprogram/app.wxss`
+- `docs/tutorials/miniprogram-zero-to-one-tutorial.md`
+
 ## 6. 待确认问题
 
 当前第一期试营业核心规则已基本收口，暂无阻塞第一版小程序和后端继续开发的待确认问题。
@@ -830,7 +985,6 @@ npm-debug.log*
 - 完整改课页面和改课历史记录。
 - 合同附件上传与查看。
 - 收款码配置和缴费记录。
-- 老师按日期切换课表。
 - 会员详情页。
 - 管理员代约课、代改课、代取消的操作日志。
 - 收费形式、完整财务结算、老师课时费金额计算、财务打款等第二期内容。

@@ -1,15 +1,29 @@
 <view class="page">
-  <view class="section-title">选择课程</view>
+  <view class="section-title">选择已报名课程</view>
   <view class="tabs">
     <view wx:for="{{courses}}" wx:key="id" class="tab {{activeCourse.id === item.id ? 'active' : ''}}" data-index="{{index}}" bindtap="selectCourse">
       {{item.course}} · {{item.teacher_name}}
     </view>
   </view>
-  <view class="notice">{{rules.openHours}}；{{rules.release}}；{{rules.selfChange}}。灰色时段表示已约、未释放或不可预约。</view>
+  <view wx:if="{{activeCourse.id}}" class="card course-summary">
+    <view class="row">
+      <view class="card-title">{{activeCourse.course}}</view>
+      <view class="pill light">{{activeCourse.teacher_name}}</view>
+    </view>
+    <view class="meta" wx:if="{{activeCourse.mode === 'fixed20'}}">20 课时制 · 已完成 {{activeCourse.completed_lessons}} / {{activeCourse.total_lessons}}</view>
+    <view class="meta" wx:else>按册学习 · {{activeCourse.book_level}}</view>
+  </view>
 
   <view class="section-title">选择日期</view>
   <view class="tabs">
     <view wx:for="{{dates}}" wx:key="date" class="tab {{activeDate === item.date ? 'active' : ''}}" data-date="{{item.date}}" bindtap="selectDate">{{item.label}}</view>
+  </view>
+  <view class="notice">{{rules.openHours}}；{{rules.release}}；{{rules.selfChange}}；周一全店休息，17:15-17:45 为晚餐休息。灰色时段表示已约、未释放或不可预约。</view>
+
+  <view wx:if="{{syncedAppointment}}" class="sync-banner">
+    <view class="sync-title">预约已同步到老师端</view>
+    <view class="sync-desc">{{syncedAppointment.course}} · {{syncedAppointment.teacher_name}} · {{syncedAppointment.date}} {{syncedAppointment.start_time}}-{{syncedAppointment.end_time}}</view>
+    <button class="btn secondary compact-btn" bindtap="previewTeacherSchedule">查看老师课表</button>
   </view>
 
   <view class="section-title">可预约时间</view>
@@ -19,4 +33,5 @@
       <view class="meta">{{item.statusText}}</view>
     </view>
   </view>
+  <view wx:if="{{!slots.length}}" class="empty">请选择课程后查看可预约时段</view>
 </view>

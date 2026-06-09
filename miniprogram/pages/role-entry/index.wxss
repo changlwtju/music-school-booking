@@ -1,0 +1,72 @@
+.role-page {
+  padding-bottom: 48rpx;
+}
+
+.role-hero {
+  height: 320rpx;
+}
+
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.role-card {
+  min-height: 180rpx;
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  padding: 28rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid rgba(83, 157, 115, 0.18);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.role-card.teacher {
+  border-color: rgba(42, 103, 144, 0.22);
+  background: rgba(246, 251, 252, 0.96);
+}
+
+.role-icon {
+  flex: 0 0 auto;
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8rpx;
+  color: #FFFFFF;
+  background: #539D73;
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+.teacher .role-icon {
+  background: #2A6790;
+}
+
+.role-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.role-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1F3D32;
+}
+
+.role-desc {
+  margin-top: 8rpx;
+  color: #5F7569;
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.role-arrow {
+  flex: 0 0 auto;
+  color: #5F7569;
+  font-size: 52rpx;
+  line-height: 1;
+}

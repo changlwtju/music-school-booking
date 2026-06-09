@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="notice">每节课上完后，请从今日课表长按对应课程录入学习内容。这里汇总展示已保存的上课记录。</view>
+  <view class="section-title">已录入记录</view>
+  <block wx:for="{{records}}" wx:key="id">
+    <view class="card">
+      <view class="row">
+        <view class="card-title">{{item.student_name}} · {{item.course}}</view>
+        <view class="pill light">{{item.billableText}}</view>
+      </view>
+      <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.campus_name}}</view>
+      <view class="meta">内容：{{item.content}}</view>
+      <view class="meta">进度：{{item.progress}}</view>
+      <view class="meta">难度：{{item.difficulty}}</view>
+      <view class="meta">作业：{{item.homework}}</view>
+      <view class="meta" wx:if="{{item.notes}}">备注：{{item.notes}}</view>
+    </view>
+  </block>
+  <view wx:if="{{!records.length}}" class="empty">暂无已录入上课记录</view>
+</view>

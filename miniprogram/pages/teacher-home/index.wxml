@@ -3,14 +3,32 @@
     <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
     <view>
       <view class="brand-title">老师工作台</view>
-      <view class="brand-subtitle">今日课表 · 会员 · 上课记录</view>
+      <view class="brand-subtitle">同店课表 · 会员 · 课后记录</view>
     </view>
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="aspectFill" />
+  <view class="course-strip">
+    <view wx:for="{{courses}}" wx:key="id" class="course-chip compact">
+      <view class="course-icon">{{item.icon}}</view>
+      <view class="course-name">{{item.name}}</view>
+    </view>
+  </view>
   <view class="grid">
     <view class="entry" bindtap="goSchedule"><view class="entry-icon">◷</view><view class="entry-title">今日课表</view><view class="entry-desc">查看门店排课</view></view>
     <view class="entry" bindtap="goMembers"><view class="entry-icon">◎</view><view class="entry-title">会员管理</view><view class="entry-desc">搜索学员信息</view></view>
+    <view class="entry" bindtap="goRecords"><view class="entry-icon">✎</view><view class="entry-title">上课记录</view><view class="entry-desc">查看已录入内容</view></view>
     <view class="entry" bindtap="goCampuses"><view class="entry-icon">⌖</view><view class="entry-title">门店地图</view><view class="entry-desc">地址与导航</view></view>
     <view class="entry" bindtap="goPayment"><view class="entry-icon">▣</view><view class="entry-title">收款码</view><view class="entry-desc">缴费入口预留</view></view>
   </view>
+  <view class="section-title">同步动态</view>
+  <block wx:for="{{syncEvents}}" wx:key="id">
+    <view class="activity">
+      <view class="activity-dot"></view>
+      <view>
+        <view class="activity-title">{{item.title}}</view>
+        <view class="meta">{{item.content}}</view>
+      </view>
+    </view>
+  </block>
+  <view wx:if="{{!syncEvents.length}}" class="empty">暂无同步动态</view>
 </view>

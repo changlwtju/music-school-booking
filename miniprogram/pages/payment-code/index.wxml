@@ -1,9 +1,10 @@
 <view class="page">
   <view class="section-title">收款码</view>
-  <view class="notice">第一期预留报名缴费付款码入口；后续可接入固定二维码、动态收款码或合同缴费记录。</view>
+  <view class="notice">{{payment.note}}</view>
   <view class="card qr">
-    <image class="logo big" src="/assets/brand/avatar.jpg" mode="aspectFill" />
-    <view class="card-title">菠菜现代音乐</view>
-    <view class="meta">请在管理端配置正式收款二维码</view>
+    <image class="logo big" src="{{payment.image}}" mode="aspectFill" />
+    <view class="card-title">{{payment.title}}</view>
+    <view class="meta">{{payment.payee}}</view>
+    <view class="pill light">{{payment.enabled ? '已启用' : '待配置'}}</view>
   </view>
 </view>

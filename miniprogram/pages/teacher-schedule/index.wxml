@@ -1,14 +1,26 @@
 <view class="page">
   <view class="section-title">选择老师</view>
   <view class="tabs">
-    <view wx:for="{{teachers}}" wx:key="id" class="tab {{activeTeacher.id === item.id ? 'active' : ''}}" data-index="{{index}}" bindtap="selectTeacher">{{item.name}}</view>
+    <view wx:for="{{teachers}}" wx:key="id" class="tab {{activeTeacher.id === item.id ? 'active' : ''}}" data-index="{{index}}" bindtap="selectTeacher">{{item.name}} · {{item.primary_course}}</view>
+  </view>
+  <view class="section-title">选择日期</view>
+  <view class="tabs">
+    <view wx:for="{{dates}}" wx:key="date" class="tab {{activeDate === item.date ? 'active' : ''}}" data-date="{{item.date}}" bindtap="selectDate">{{item.label}}</view>
   </view>
   <view class="notice">{{schedule.notice}}</view>
+  <view class="stat-grid">
+    <view class="stat"><view class="stat-value">{{scheduleStats.total}}</view><view class="stat-label">总课程</view></view>
+    <view class="stat"><view class="stat-value">{{scheduleStats.booked}}</view><view class="stat-label">待上课</view></view>
+    <view class="stat"><view class="stat-value">{{scheduleStats.completed}}</view><view class="stat-label">已完成</view></view>
+  </view>
+  <button class="btn secondary compact-btn" bindtap="loadSchedule">刷新课表</button>
   <view class="section-title">{{schedule.date}} 课程</view>
   <block wx:for="{{schedule.appointments}}" wx:key="id">
-    <view class="card" data-id="{{item.id}}" bindlongpress="editRecord">
+    <view class="card {{item.isSynced ? 'synced-card' : ''}}" data-id="{{item.id}}" bindlongpress="editRecord">
       <view class="row"><view class="card-title">{{item.start_time}} {{item.student_name}}</view><view class="pill">{{item.course}}</view></view>
-      <view class="meta">{{item.campus_name}} · {{item.modeText}} · {{item.statusText}}</view>
+      <view class="meta">{{item.campus_name}} · {{item.modeText}} · {{item.progressText}} · {{item.statusText}}</view>
+      <view wx:if="{{item.isSynced}}" class="sync-mini">刚由学生端预约同步</view>
     </view>
   </block>
+  <view wx:if="{{!schedule.appointments.length}}" class="empty">当前老师这一天暂无课程</view>
 </view>

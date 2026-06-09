@@ -1,19 +1,22 @@
 import { request } from '../../utils/request';
 
 Page({
-  data: { summary: { nextAppointments: [] } },
+  data: { summary: { nextAppointments: [] }, courses: [] },
   onShow() {
     this.load();
   },
   async load() {
     const app = getApp();
-    const summary = await request(`/students/${app.globalData.studentId}/summary`);
+    const [summary, courses] = await Promise.all([
+      request(`/students/${app.globalData.studentId}/summary`),
+      request('/courses')
+    ]);
     if (!summary) return;
     summary.nextAppointments = (summary.nextAppointments || []).map((item) => ({
       ...item,
       statusText: item.status === 'booked' ? '已预约' : item.status
     }));
-    this.setData({ summary });
+    this.setData({ summary, courses: courses || [] });
   },
   goBooking() { wx.navigateTo({ url: '/pages/booking/index' }); },
   goCampuses() { wx.navigateTo({ url: '/pages/campuses/index' }); },

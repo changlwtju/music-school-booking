@@ -19,7 +19,8 @@ Page({
       { label: '后天', date: today(2) }
     ],
     rules: { openHours: '授课时间 12:00-20:00', release: '次日课表前一天 20:00 后释放', selfChange: '距离开课不足 1.5 小时不可自助改课' },
-    slots: []
+    slots: [],
+    syncedAppointment: null
   },
   async onLoad() {
     const app = getApp();
@@ -67,8 +68,15 @@ Page({
       }
     });
     if (result) {
+      app.globalData.teacherId = result.teacher_id;
+      app.globalData.lastSyncedAppointmentId = result.id;
+      app.globalData.lastSyncedDate = result.date;
       wx.showToast({ title: '预约成功', icon: 'success' });
+      this.setData({ syncedAppointment: result });
       this.loadSlots();
     }
+  },
+  previewTeacherSchedule() {
+    wx.navigateTo({ url: '/pages/teacher-schedule/index' });
   }
 });

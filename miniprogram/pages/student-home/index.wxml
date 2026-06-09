@@ -3,11 +3,20 @@
     <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
     <view>
       <view class="brand-title">菠菜现代音乐</view>
-      <view class="brand-subtitle">课程预约 · 上课记录 · 校区服务</view>
+      <view class="brand-subtitle">钢琴 · 吉他 · 架子鼓</view>
     </view>
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="aspectFill" />
-  <view class="notice">授课时间 12:00-20:00；次日课表前一天 20:00 后释放；距离开课不足 1.5 小时请联系老师处理。</view>
+  <view class="course-strip">
+    <view wx:for="{{courses}}" wx:key="id" class="course-chip">
+      <view class="course-icon">{{item.icon}}</view>
+      <view>
+        <view class="course-name">{{item.name}}</view>
+        <view class="course-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+  <view class="notice">授课时间 12:00-20:00；每节课 45 分钟；周一全店休息；17:15-17:45 为晚餐休息；次日课表前一天 20:00 后释放；距离开课不足 1.5 小时请联系老师处理。</view>
 
   <view class="section-title">学生服务</view>
   <view class="grid">
@@ -24,4 +33,5 @@
       <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.teacher_name}} · {{item.campus_name}}</view>
     </view>
   </block>
+  <view wx:if="{{!summary.nextAppointments.length}}" class="empty">暂无近期预约</view>
 </view>

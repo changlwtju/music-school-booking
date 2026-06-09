@@ -4,6 +4,9 @@ const app = getApp();
 
 export function request(path, options = {}) {
   const apiBase = app.globalData.apiBase;
+  if (!apiBase) {
+    return mockRequest(path, options);
+  }
   return new Promise((resolve) => {
     wx.request({
       url: `${apiBase}${path}`,

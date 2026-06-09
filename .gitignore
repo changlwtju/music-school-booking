@@ -7,3 +7,4 @@ npm-debug.log*
 **/@eaDir/
 __pycache__/
 *.pyc
+miniprogram/project.private.config.json

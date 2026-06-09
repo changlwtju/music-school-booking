@@ -9,4 +9,5 @@
       <button class="btn secondary" data-item="{{item}}" bindtap="openLocation">查看地图</button>
     </view>
   </block>
+  <view wx:if="{{!campuses.length}}" class="empty">暂无校区信息</view>
 </view>
