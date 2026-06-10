@@ -27,6 +27,10 @@ textarea {
   margin-bottom: 24rpx;
 }
 
+.topbar > view {
+  min-width: 0;
+}
+
 .logo {
   width: 96rpx;
   height: 96rpx;
@@ -37,19 +41,23 @@ textarea {
   font-size: 40rpx;
   font-weight: 700;
   color: #1F3D32;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .brand-subtitle {
   margin-top: 6rpx;
   font-size: 24rpx;
   color: #5F7569;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .hero-image {
   width: 100%;
-  height: 288rpx;
+  height: auto;
+  display: block;
   border-radius: 8rpx;
-  object-fit: cover;
   margin-bottom: 24rpx;
   background: #E7EFE9;
 }
@@ -87,13 +95,28 @@ textarea {
   border-radius: 8rpx;
   color: #FFFFFF;
   background: #1F3D32;
-  font-size: 30rpx;
+  font-size: 32rpx;
+  box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, 0.2);
+}
+
+.course-icon.piano {
+  background: #2F4A8A;
+}
+
+.course-icon.guitar {
+  background: #8B5A2B;
+}
+
+.course-icon.drum {
+  background: #8B3A3A;
 }
 
 .course-name {
   color: #1F3D32;
   font-size: 26rpx;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .course-desc {
@@ -101,6 +124,8 @@ textarea {
   color: #5F7569;
   font-size: 21rpx;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .section-title {
@@ -131,7 +156,15 @@ textarea {
 }
 
 .entry-icon {
-  font-size: 42rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8rpx;
+  background: rgba(83, 157, 115, 0.12);
+  color: #1F3D32;
+  font-size: 36rpx;
   line-height: 1;
   margin-bottom: 18rpx;
 }
@@ -141,6 +174,8 @@ textarea {
   font-size: 30rpx;
   font-weight: 700;
   color: #1F3D32;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .entry-desc,
@@ -149,6 +184,8 @@ textarea {
   color: #5F7569;
   font-size: 24rpx;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .card {
@@ -275,23 +312,38 @@ textarea {
 }
 
 .row {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20rpx;
 }
 
+.row > .card-title,
+.row > text:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .pill {
+  flex: 0 0 auto;
+  max-width: 52%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 104rpx;
   min-height: 48rpx;
-  padding: 0 16rpx;
+  padding: 8rpx 16rpx;
   border-radius: 999rpx;
   color: #FFFFFF;
   background: #539D73;
   font-size: 22rpx;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .pill.light {
@@ -361,6 +413,7 @@ textarea {
 }
 
 .field {
+  width: 100%;
   margin-bottom: 18rpx;
 }
 
@@ -374,11 +427,19 @@ textarea {
 .input,
 .textarea {
   width: 100%;
+  min-width: 0;
   border-radius: 8rpx;
   border: 2rpx solid rgba(83, 157, 115, 0.2);
   padding: 18rpx;
   color: #1F3D32;
   background: rgba(255, 255, 255, 0.92);
+  font-size: 26rpx;
+  line-height: 1.45;
+}
+
+.input {
+  height: 88rpx;
+  min-height: 88rpx;
 }
 
 .textarea {

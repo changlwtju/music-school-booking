@@ -1,5 +1,13 @@
 import { request, today } from '../../utils/request';
 
+const releaseHour = 20;
+
+const isAfterReleaseTime = () => new Date().getHours() >= releaseHour;
+
+const studentBookingDate = () => today(isAfterReleaseTime() ? 1 : 0);
+
+const studentBookingDateLabel = () => (isAfterReleaseTime() ? '明天' : '今天');
+
 const statusText = {
   available: '可预约',
   occupied: '已被预约',
@@ -12,14 +20,11 @@ Page({
   data: {
     courses: [],
     activeCourse: {},
-    activeDate: today(1),
-    dates: [
-      { label: '今天', date: today(0) },
-      { label: '明天', date: today(1) },
-      { label: '后天', date: today(2) }
-    ],
+    activeDate: studentBookingDate(),
+    activeDateLabel: studentBookingDateLabel(),
     rules: { openHours: '授课时间 12:00-20:00', release: '次日课表前一天 20:00 后释放', selfChange: '距离开课不足 1.5 小时不可自助改课' },
     slots: [],
+    bookingNotice: '',
     syncedAppointment: null
   },
   async onLoad() {
@@ -28,12 +33,37 @@ Page({
     this.setData({ courses, activeCourse: courses[0] || {} });
     this.loadSlots();
   },
-  selectCourse(event) {
-    this.setData({ activeCourse: this.data.courses[event.currentTarget.dataset.index] });
+  onShow() {
+    this.refreshBookingDate();
+    this.startReleaseWatcher();
+  },
+  onHide() {
+    this.stopReleaseWatcher();
+  },
+  onUnload() {
+    this.stopReleaseWatcher();
+  },
+  startReleaseWatcher() {
+    this.stopReleaseWatcher();
+    this.releaseTimer = setInterval(() => this.refreshBookingDate(), 30000);
+  },
+  stopReleaseWatcher() {
+    if (!this.releaseTimer) return;
+    clearInterval(this.releaseTimer);
+    this.releaseTimer = null;
+  },
+  refreshBookingDate() {
+    const activeDate = studentBookingDate();
+    if (activeDate === this.data.activeDate) return;
+    this.setData({
+      activeDate,
+      activeDateLabel: studentBookingDateLabel(),
+      syncedAppointment: null
+    });
     this.loadSlots();
   },
-  selectDate(event) {
-    this.setData({ activeDate: event.currentTarget.dataset.date });
+  selectCourse(event) {
+    this.setData({ activeCourse: this.data.courses[event.currentTarget.dataset.index] });
     this.loadSlots();
   },
   async loadSlots() {
@@ -41,7 +71,13 @@ Page({
     if (!activeCourse.teacher_id) return;
     const data = await request(`/schedule/slots?teacherId=${activeCourse.teacher_id}&contractId=${activeCourse.contract_id}&date=${activeDate}`);
     const slots = (data?.slots || []).map((item) => ({ ...item, statusText: statusText[item.status] || item.reason || item.status }));
-    this.setData({ slots, rules: data?.rules || this.data.rules });
+    this.setData({
+      slots,
+      bookingNotice: isAfterReleaseTime()
+        ? '当前已释放明日约课权限，可预约明天课程。'
+        : '20:00 前仅开放当天约课；20:00 课程结束后将自动切换到明天。',
+      rules: data?.rules || this.data.rules
+    });
   },
   async tapSlot(event) {
     const slot = event.currentTarget.dataset.slot;

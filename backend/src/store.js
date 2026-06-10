@@ -5,13 +5,20 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', 'data', 'spinach-music.json');
 
+export const courseCatalog = [
+  { id: 'course-piano', name: '钢琴', icon: '🎹', iconClass: 'piano', desc: '启蒙、考级与作品练习' },
+  { id: 'course-guitar', name: '吉他', icon: '🎸', iconClass: 'guitar', desc: '弹唱、和弦与节奏训练' },
+  { id: 'course-drum', name: '架子鼓', icon: '🥁', iconClass: 'drum', desc: '节拍、律动与乐队配合' }
+];
+
 export function createInitialData() {
   const now = new Date().toISOString();
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   return {
+    courses: courseCatalog,
     campuses: [
-      { id: 'campus-main', name: '菠菜现代音乐总店', address: '上海市浦东新区示例路 88 号 2F', phone: '021-12345678', latitude: 31.2304, longitude: 121.4737, hours: '周二至周日 12:00-20:00', image: '/assets/brand/brand-display.png', release_time: '20:00' },
-      { id: 'campus-east', name: '菠菜现代音乐东城店', address: '上海市浦东新区节拍路 66 号 3F', phone: '021-87654321', latitude: 31.2204, longitude: 121.4937, hours: '周二至周日 12:00-20:00', image: '/assets/brand/brand-display.png', release_time: '20:00' }
+      { id: 'campus-main', name: '菠菜现代音乐一店（净月御翠园）', address: '长春市净月区御翠园小区别墅区', phone: '请联系校区老师', latitude: 43.7908, longitude: 125.4285, hours: '周二至周日 12:00-20:00', image: '/assets/brand/brand-display.png', release_time: '20:00', desc: '教学地点位于御翠园小区别墅区内，学习环境优越。' },
+      { id: 'campus-east', name: '菠菜现代音乐二店（高新融创上城二期）', address: '长春市高新区融创上城二期小区别墅区', phone: '请联系校区老师', latitude: 43.8325, longitude: 125.2608, hours: '周二至周日 12:00-20:00', image: '/assets/brand/brand-display.png', release_time: '20:00', desc: '教学地点位于融创上城二期小区别墅区内，学习环境优越。' }
     ],
     users: [
       { id: 'user-student', openid: 'demo-student', name: '小菠菜', phone: '13800000001', role: 'student', status: 'active' },
@@ -36,6 +43,7 @@ export function createInitialData() {
     appointments: [
       { id: 'appt-demo', student_id: 'student-chen', teacher_id: 'teacher-lin', campus_id: 'campus-main', contract_id: 'contract-drum', course: '架子鼓', date: tomorrow, start_time: '15:00', end_time: '15:45', status: 'booked', created_at: now, updated_at: now, cancel_reason: '' }
     ],
+    teacherAvailability: [],
     lessonRecords: [
       { id: 'record-demo', appointment_id: 'recorded-demo', student_id: 'student-chen', teacher_id: 'teacher-lin', campus_id: 'campus-main', contract_id: 'contract-drum', course: '架子鼓', date: '2026-06-07', start_time: '15:00', end_time: '15:45', status: 'completed', billable: 1, difficulty: '适中', progress: '八分音符稳定到 82 BPM', homework: '每天 10 分钟节拍器练习', content: '复习四分音符，加入八分音符与底鼓踩镲配合。', notes: '注意手腕放松。', created_at: now }
     ]
@@ -80,6 +88,10 @@ export function studentName(id) {
 
 export function contractById(id) {
   return store.contracts.find((item) => item.id === id);
+}
+
+export function availabilityForDate(teacherId, date) {
+  return (store.teacherAvailability || []).find((item) => item.teacher_id === teacherId && item.date === date);
 }
 
 export function appointmentView(item) {

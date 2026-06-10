@@ -4,7 +4,7 @@ import express from 'express';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { buildSlots, canSelfChange, DEFAULT_SLOTS, isMonday, isReleased, remainingLessons } from './schedule.js';
-import { appointmentView, campusName, contractById, saveStore, store, teacherName } from './store.js';
+import { appointmentView, availabilityForDate, campusName, contractById, courseCatalog, saveStore, store, teacherName } from './store.js';
 
 const app = express();
 app.use(cors());
@@ -18,6 +18,45 @@ function fail(res, status, message) {
   res.status(status).json({ error: { message } });
 }
 
+function normalizeAvailabilitySlots(slots) {
+  return slots.map((item) => {
+    const slot = DEFAULT_SLOTS.find(([start]) => start === item.startTime);
+    if (!slot) return null;
+    return {
+      start_time: slot[0],
+      end_time: slot[1],
+      status: item.status,
+      reason: item.reason || ''
+    };
+  }).filter(Boolean);
+}
+
+function buildFullDayClosedSlots(reason = '老师请假') {
+  return DEFAULT_SLOTS.map(([startTime, endTime]) => ({
+    start_time: startTime,
+    end_time: endTime,
+    status: 'closed',
+    reason
+  }));
+}
+
+function upsertTeacherAvailability({ teacherId, campusId, date, slots }) {
+  const now = new Date().toISOString();
+  store.teacherAvailability ||= [];
+  const existing = availabilityForDate(teacherId, date);
+  const availability = {
+    id: existing?.id || `availability-${teacherId}-${date}`,
+    teacher_id: teacherId,
+    campus_id: campusId,
+    date,
+    slots,
+    updated_at: now
+  };
+  if (existing) Object.assign(existing, availability);
+  else store.teacherAvailability.push(availability);
+  return availability;
+}
+
 function enrichRecord(record) {
   return {
     ...record,
@@ -27,6 +66,8 @@ function enrichRecord(record) {
 }
 
 app.get('/health', (_req, res) => ok(res, { status: 'ok' }));
+
+app.get('/courses', (_req, res) => ok(res, store.courses || courseCatalog));
 
 app.post('/auth/demo-login', (req, res) => {
   const role = req.body?.role === 'teacher' ? 'teacher' : 'student';
@@ -100,14 +141,17 @@ app.get('/schedule/slots', (req, res) => {
   const contract = contractById(contractId);
   if (!contract) return fail(res, 404, '合同不存在');
   const appointments = store.appointments.filter((item) => item.teacher_id === teacherId && item.date === date);
+  const availability = availabilityForDate(teacherId, date);
   ok(res, {
     date,
+    availability_configured: Boolean(availability),
     rules: {
       openHours: '授课时间 12:00-20:00',
       release: '次日课表前一天 20:00 后释放',
-      selfChange: '距离开课不足 1.5 小时不可自助改课'
+      selfChange: '距离开课不足 1.5 小时不可自助改课',
+      availability: '老师默认周二至周日 12:00-20:00 全时段可约，后台仅维护请假或不可约例外'
     },
-    slots: buildSlots({ date, appointments, contract })
+    slots: buildSlots({ date, appointments, contract, availability })
   });
 });
 
@@ -128,9 +172,10 @@ app.post('/appointments', (req, res) => {
   if (!binding) return fail(res, 404, '未找到可预约课程');
   const contract = contractById(binding.contract_id);
   if (!contract || contract.status !== 'active') return fail(res, 409, '合同状态不可预约');
-  if (contract.mode === 'fixed20' && remainingLessons(contract) <= 0) return fail(res, 409, '剩余课时不足');
-  const occupied = store.appointments.some((item) => item.teacher_id === binding.teacher_id && item.date === date && item.start_time === startTime && item.status === 'booked');
-  if (occupied) return fail(res, 409, '该时间已被预约');
+  const appointments = store.appointments.filter((item) => item.teacher_id === binding.teacher_id && item.date === date);
+  const availability = availabilityForDate(binding.teacher_id, date);
+  const bookableSlot = buildSlots({ date, appointments, contract, availability }).find((item) => item.startTime === startTime);
+  if (!bookableSlot || bookableSlot.status !== 'available') return fail(res, 409, bookableSlot?.reason || '该时间不可预约');
 
   const now = new Date().toISOString();
   const appointment = {
@@ -151,6 +196,143 @@ app.post('/appointments', (req, res) => {
   store.appointments.push(appointment);
   saveStore(store);
   ok(res, appointment);
+});
+
+app.get('/admin/teacher-availability', (req, res) => {
+  const parsed = z.object({
+    teacherId: z.string(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+  }).safeParse(req.query);
+  if (!parsed.success) return fail(res, 400, '参数不完整');
+  const availability = availabilityForDate(parsed.data.teacherId, parsed.data.date);
+  ok(res, availability || null);
+});
+
+app.put('/admin/teacher-availability', (req, res) => {
+  const slotSchema = z.object({
+    startTime: z.string(),
+    status: z.enum(['open', 'closed']).default('open'),
+    reason: z.string().optional()
+  });
+  const parsed = z.object({
+    teacherId: z.string(),
+    campusId: z.string(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    leaveType: z.enum(['partial', 'full-day']).default('partial'),
+    reason: z.string().optional(),
+    slots: z.array(slotSchema).optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '可约时段信息不完整');
+  const { teacherId, campusId, date, leaveType, reason = '老师请假', slots = [] } = parsed.data;
+  const teacher = store.teachers.find((item) => item.id === teacherId && item.status === 'active');
+  if (!teacher) return fail(res, 404, '老师不存在');
+  const normalizedSlots = leaveType === 'full-day'
+    ? buildFullDayClosedSlots(reason)
+    : normalizeAvailabilitySlots(slots);
+  if (!normalizedSlots.length) return fail(res, 400, '没有有效时段');
+
+  const availability = upsertTeacherAvailability({ teacherId, campusId, date, slots: normalizedSlots });
+  saveStore(store);
+  ok(res, availability);
+});
+
+app.post('/admin/teacher-availability/bulk', (req, res) => {
+  const slotSchema = z.object({
+    startTime: z.string(),
+    status: z.enum(['open', 'closed']).default('open'),
+    reason: z.string().optional()
+  });
+  const parsed = z.object({
+    teacherId: z.string(),
+    campusId: z.string(),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    leaveType: z.enum(['partial', 'full-day']).default('partial'),
+    reason: z.string().optional(),
+    slots: z.array(slotSchema).optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '批量排课信息不完整');
+  const { teacherId, campusId, startDate, endDate, leaveType, reason = '老师请假', slots = [] } = parsed.data;
+  const teacher = store.teachers.find((item) => item.id === teacherId && item.status === 'active');
+  if (!teacher) return fail(res, 404, '老师不存在');
+  const start = dayjs(startDate);
+  const end = dayjs(endDate);
+  if (!start.isValid() || !end.isValid() || end.isBefore(start, 'day')) return fail(res, 400, '日期范围无效');
+  if (end.diff(start, 'day') > 730) return fail(res, 400, '单次最多批量生成 730 天排课');
+  const normalizedSlots = leaveType === 'full-day'
+    ? buildFullDayClosedSlots(reason)
+    : normalizeAvailabilitySlots(slots);
+  if (!normalizedSlots.length) return fail(res, 400, '没有有效时段');
+
+  const data = [];
+  for (let cursor = start; !cursor.isAfter(end, 'day'); cursor = cursor.add(1, 'day')) {
+    const date = cursor.format('YYYY-MM-DD');
+    const daySlots = isMonday(date)
+      ? normalizedSlots.map((item) => ({ ...item, status: 'closed', reason: '周一全店休息' }))
+      : normalizedSlots;
+    data.push(upsertTeacherAvailability({ teacherId, campusId, date, slots: daySlots }));
+  }
+  saveStore(store);
+  ok(res, { count: data.length, data });
+});
+
+app.post('/admin/trial-appointments', (req, res) => {
+  const parsed = z.object({
+    teacherId: z.string(),
+    campusId: z.string(),
+    studentName: z.string().min(1),
+    studentPhone: z.string().optional(),
+    course: z.string().min(1),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    startTime: z.string()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '体验课预约信息不完整');
+  const { teacherId, campusId, studentName, studentPhone = '', course, date, startTime } = parsed.data;
+  const slot = DEFAULT_SLOTS.find(([start]) => start === startTime);
+  if (!slot) return fail(res, 400, '无效时间段');
+  if (isMonday(date)) return fail(res, 409, '周一全店休息，不开放预约');
+  const teacher = store.teachers.find((item) => item.id === teacherId && item.status === 'active');
+  if (!teacher) return fail(res, 404, '老师不存在');
+  const appointments = store.appointments.filter((item) => item.teacher_id === teacherId && item.date === date);
+  const availability = availabilityForDate(teacherId, date);
+  const bookableSlot = buildSlots({ date, appointments, availability, enforceRelease: false }).find((item) => item.startTime === startTime);
+  if (!bookableSlot || bookableSlot.status !== 'available') return fail(res, 409, bookableSlot?.reason || '该时间不可预约');
+
+  const now = new Date().toISOString();
+  const student = {
+    id: `trial-student-${nanoid()}`,
+    user_id: '',
+    campus_id: campusId,
+    name: studentName,
+    phone: studentPhone,
+    avatar: '/assets/brand/avatar.png',
+    enrolled_at: date,
+    expires_at: date,
+    payment_status: 'trial',
+    status: 'trial',
+    notes: '后台创建的体验课学员'
+  };
+  const appointment = {
+    id: `trial-${nanoid()}`,
+    student_id: student.id,
+    teacher_id: teacherId,
+    campus_id: campusId,
+    contract_id: '',
+    course,
+    date,
+    start_time: startTime,
+    end_time: slot[1],
+    status: 'booked',
+    lesson_type: 'trial',
+    created_by: 'admin',
+    created_at: now,
+    updated_at: now,
+    cancel_reason: ''
+  };
+  store.students.push(student);
+  store.appointments.push(appointment);
+  saveStore(store);
+  ok(res, appointmentView(appointment));
 });
 
 app.post('/appointments/:appointmentId/cancel', (req, res) => {
@@ -174,13 +356,22 @@ app.get('/teachers', (req, res) => {
 
 app.get('/teachers/:teacherId/schedule', (req, res) => {
   const date = req.query.date || dayjs().format('YYYY-MM-DD');
+  const availability = availabilityForDate(req.params.teacherId, date);
   const appointments = store.appointments
     .filter((item) => item.teacher_id === req.params.teacherId && item.date === date)
     .map(appointmentView)
     .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  const availableSlotCount = buildSlots({
+    date,
+    appointments: store.appointments.filter((item) => item.teacher_id === req.params.teacherId && item.date === date),
+    availability,
+    enforceRelease: false
+  }).filter((item) => item.status === 'available').length;
   ok(res, {
     date,
-    notice: '同店老师课表可查看但不可代约课；课后长按课程录入学习内容。',
+    availability_configured: Boolean(availability),
+    available_slot_count: availableSlotCount,
+    notice: '老师默认周二至周日 12:00-20:00 全时段排课；请假或临时不可约由后台维护。学生端约课权限按前一天 20:00 释放。',
     appointments
   });
 });

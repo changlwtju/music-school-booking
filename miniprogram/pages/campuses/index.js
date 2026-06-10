@@ -8,8 +8,8 @@ Page({
   openLocation(event) {
     const item = event.currentTarget.dataset.item;
     wx.openLocation({
-      latitude: Number(item.latitude || 31.2304),
-      longitude: Number(item.longitude || 121.4737),
+      latitude: Number(item.latitude || 43.8171),
+      longitude: Number(item.longitude || 125.3235),
       name: item.name,
       address: item.address,
       scale: 16

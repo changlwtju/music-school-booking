@@ -20,8 +20,11 @@ export function isMonday(date) {
 export function isReleased(date, now = dayjs()) {
   const target = dayjs(date);
   if (!target.isValid()) return false;
-  if (target.isBefore(now, 'day') || target.isSame(now, 'day')) return true;
-  if (target.diff(now, 'day') > 1) return false;
+  const targetDate = target.format('YYYY-MM-DD');
+  const todayDate = now.format('YYYY-MM-DD');
+  const tomorrowDate = now.add(1, 'day').format('YYYY-MM-DD');
+  if (targetDate <= todayDate) return true;
+  if (targetDate !== tomorrowDate) return false;
   return now.format('HH:mm') >= '20:00';
 }
 
@@ -30,14 +33,16 @@ export function canSelfChange(date, startTime, now = dayjs()) {
   return start.diff(now, 'minute') >= 90;
 }
 
-export function buildSlots({ date, appointments = [], contract, now = dayjs() }) {
+export function buildSlots({ date, appointments = [], contract, availability, now = dayjs(), enforceRelease = true }) {
   const occupied = new Map(appointments.map((item) => [item.start_time, item]));
-  const released = isReleased(date, now);
+  const availabilityByStart = new Map((availability?.slots || []).map((item) => [item.start_time, item]));
+  const released = !enforceRelease || isReleased(date, now);
   const closed = isMonday(date);
   const noBalance = contract?.mode === 'fixed20' && remainingLessons(contract) <= 0;
 
   return DEFAULT_SLOTS.map(([startTime, endTime]) => {
     const appointment = occupied.get(startTime);
+    const configuredSlot = availabilityByStart.get(startTime);
     let status = 'available';
     let reason = '';
     if (closed) {
@@ -46,6 +51,9 @@ export function buildSlots({ date, appointments = [], contract, now = dayjs() })
     } else if (!released) {
       status = 'unreleased';
       reason = '课表尚未释放';
+    } else if (configuredSlot && configuredSlot.status !== 'open') {
+      status = 'closed';
+      reason = configuredSlot.reason || '老师该时段不可约';
     } else if (noBalance) {
       status = 'disabled';
       reason = '剩余课时不足';

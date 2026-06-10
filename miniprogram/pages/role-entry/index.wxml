@@ -7,11 +7,11 @@
     </view>
   </view>
 
-  <image class="hero-image role-hero" src="/assets/brand/brand-display.jpg" mode="aspectFill" />
+  <image class="hero-image role-hero" src="/assets/brand/brand-display.jpg" mode="widthFix" />
 
   <view class="course-strip">
     <view wx:for="{{courses}}" wx:key="id" class="course-chip compact">
-      <view class="course-icon">{{item.icon}}</view>
+      <view class="course-icon {{item.iconClass}}">{{item.icon}}</view>
       <view class="course-name">{{item.name}}</view>
     </view>
   </view>
@@ -21,7 +21,7 @@
   <view class="section-title">选择身份</view>
   <view class="role-list">
     <view class="role-card student" bindtap="enterStudent">
-      <view class="role-icon">♪</view>
+      <view class="role-icon">🎓</view>
       <view class="role-copy">
         <view class="role-title">学生端</view>
         <view class="role-desc">约课、校区地址、我的信息、合同与上课记录</view>
@@ -30,7 +30,7 @@
     </view>
 
     <view class="role-card teacher" bindtap="enterTeacher">
-      <view class="role-icon">◷</view>
+      <view class="role-icon">🧑‍🏫</view>
       <view class="role-copy">
         <view class="role-title">老师端</view>
         <view class="role-desc">今日课表、会员管理、上课记录、门店地图、收款码</view>

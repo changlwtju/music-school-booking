@@ -14,11 +14,12 @@
     <view class="meta" wx:else>按册学习 · {{activeCourse.book_level}}</view>
   </view>
 
-  <view class="section-title">选择日期</view>
-  <view class="tabs">
-    <view wx:for="{{dates}}" wx:key="date" class="tab {{activeDate === item.date ? 'active' : ''}}" data-date="{{item.date}}" bindtap="selectDate">{{item.label}}</view>
+  <view class="section-title">约课日期</view>
+  <view class="booking-day">
+    <view class="booking-day-label">{{activeDateLabel}}</view>
+    <view class="booking-day-date">{{activeDate}}</view>
   </view>
-  <view class="notice">{{rules.openHours}}；{{rules.release}}；{{rules.selfChange}}；周一全店休息，17:15-17:45 为晚餐休息。灰色时段表示已约、未释放或不可预约。</view>
+  <view class="notice">{{bookingNotice}} {{rules.openHours}}；{{rules.release}}；{{rules.selfChange}}；周一全店休息，17:15-17:45 为晚餐休息。灰色时段表示已约、不可预约或已被预约。</view>
 
   <view wx:if="{{syncedAppointment}}" class="sync-banner">
     <view class="sync-title">预约已同步到老师端</view>

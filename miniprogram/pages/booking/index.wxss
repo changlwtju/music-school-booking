@@ -1,2 +1,30 @@
 .notice { margin-bottom: 8rpx; }
 .course-summary { margin-bottom: 8rpx; }
+
+.booking-day {
+  min-height: 108rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-bottom: 16rpx;
+  padding: 20rpx 22rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid rgba(42, 103, 144, 0.2);
+  background: rgba(246, 251, 252, 0.96);
+}
+
+.booking-day-label {
+  flex: 0 0 auto;
+  color: #2A6790;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.booking-day-date {
+  min-width: 0;
+  color: #1F3D32;
+  font-size: 30rpx;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

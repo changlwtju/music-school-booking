@@ -6,10 +6,10 @@
       <view class="brand-subtitle">钢琴 · 吉他 · 架子鼓</view>
     </view>
   </view>
-  <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="aspectFill" />
+  <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />
   <view class="course-strip">
     <view wx:for="{{courses}}" wx:key="id" class="course-chip">
-      <view class="course-icon">{{item.icon}}</view>
+      <view class="course-icon {{item.iconClass}}">{{item.icon}}</view>
       <view>
         <view class="course-name">{{item.name}}</view>
         <view class="course-desc">{{item.desc}}</view>
@@ -20,10 +20,10 @@
 
   <view class="section-title">学生服务</view>
   <view class="grid">
-    <view class="entry" bindtap="goBooking"><view class="entry-icon">♪</view><view class="entry-title">约课</view><view class="entry-desc">选择固定老师课表</view></view>
-    <view class="entry" bindtap="goCampuses"><view class="entry-icon">⌖</view><view class="entry-title">校区地址</view><view class="entry-desc">查看门店与导航</view></view>
-    <view class="entry" bindtap="goProfile"><view class="entry-icon">◎</view><view class="entry-title">我的信息</view><view class="entry-desc">课时与学习进度</view></view>
-    <view class="entry" bindtap="goContracts"><view class="entry-icon">□</view><view class="entry-title">合同</view><view class="entry-desc">查看课程合同</view></view>
+    <view class="entry" bindtap="goBooking"><view class="entry-icon">📅</view><view class="entry-title">约课</view><view class="entry-desc">选择固定老师课表</view></view>
+    <view class="entry" bindtap="goCampuses"><view class="entry-icon">📍</view><view class="entry-title">校区地址</view><view class="entry-desc">查看门店与导航</view></view>
+    <view class="entry" bindtap="goProfile"><view class="entry-icon">👤</view><view class="entry-title">我的信息</view><view class="entry-desc">课时与学习进度</view></view>
+    <view class="entry" bindtap="goContracts"><view class="entry-icon">📄</view><view class="entry-title">合同</view><view class="entry-desc">查看课程合同</view></view>
   </view>
 
   <view class="section-title">近期预约</view>

@@ -19,30 +19,42 @@ const addMinutes = (time, minutes) => {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
 
+const isReleased = (date) => {
+  const todayDate = formatDate(0);
+  if (date <= todayDate) return true;
+  if (date > formatDate(1)) return false;
+  const now = new Date();
+  const hour = String(now.getHours()).padStart(2, '0');
+  const minute = String(now.getMinutes()).padStart(2, '0');
+  return `${hour}:${minute}` >= '20:00';
+};
+
 const courseCatalog = [
-  { id: 'course-piano', name: '钢琴', icon: '♬', desc: '启蒙、考级与作品练习' },
-  { id: 'course-guitar', name: '吉他', icon: '♩', desc: '弹唱、和弦与节奏训练' },
-  { id: 'course-drum', name: '架子鼓', icon: '♪', desc: '节拍、律动与乐队配合' }
+  { id: 'course-piano', name: '钢琴', icon: '🎹', iconClass: 'piano', desc: '启蒙、考级与作品练习' },
+  { id: 'course-guitar', name: '吉他', icon: '🎸', iconClass: 'guitar', desc: '弹唱、和弦与节奏训练' },
+  { id: 'course-drum', name: '架子鼓', icon: '🥁', iconClass: 'drum', desc: '节拍、律动与乐队配合' }
 ];
 
 const campuses = [
   {
     id: 'campus-main',
-    name: '菠菜现代音乐总店',
-    address: '上海市浦东新区示例路 88 号 2F',
-    phone: '021-12345678',
+    name: '菠菜现代音乐一店（净月御翠园）',
+    address: '长春市净月区御翠园小区别墅区',
+    phone: '请联系校区老师',
     hours: '周二至周日 12:00-20:00',
-    latitude: 31.2304,
-    longitude: 121.4737
+    latitude: 43.7908,
+    longitude: 125.4285,
+    desc: '教学地点位于御翠园小区别墅区内，学习环境优越。'
   },
   {
     id: 'campus-east',
-    name: '菠菜现代音乐东城店',
-    address: '上海市浦东新区节拍路 66 号 3F',
-    phone: '021-87654321',
+    name: '菠菜现代音乐二店（高新融创上城二期）',
+    address: '长春市高新区融创上城二期小区别墅区',
+    phone: '请联系校区老师',
     hours: '周二至周日 12:00-20:00',
-    latitude: 31.2204,
-    longitude: 121.4937
+    latitude: 43.8325,
+    longitude: 125.2608,
+    desc: '教学地点位于融创上城二期小区别墅区内，学习环境优越。'
   }
 ];
 
@@ -236,21 +248,9 @@ const records = [
 ];
 
 const schedulePresets = {
-  'teacher-lin': {
-    [formatDate(0)]: { closed: ['12:00', '12:45'], occupied: ['15:00', '18:30'] },
-    [formatDate(1)]: { occupied: ['15:00'], disabled: ['19:15'] },
-    [formatDate(2)]: { occupied: ['13:30', '16:30'] }
-  },
-  'teacher-qiao': {
-    [formatDate(0)]: { closed: ['12:00'], occupied: ['14:15', '17:45'] },
-    [formatDate(1)]: { occupied: ['12:45', '18:30'] },
-    [formatDate(2)]: { occupied: ['15:45'], disabled: ['19:15'] }
-  },
-  'teacher-sun': {
-    [formatDate(0)]: { occupied: ['17:45'] },
-    [formatDate(1)]: { closed: ['12:00', '12:45', '13:30'] },
-    [formatDate(2)]: { occupied: ['14:15', '18:30'] }
-  }
+  'teacher-lin': {},
+  'teacher-qiao': {},
+  'teacher-sun': {}
 };
 
 const slotStarts = ['12:00', '12:45', '13:30', '14:15', '15:00', '15:45', '16:30', '17:45', '18:30', '19:15'];
@@ -288,6 +288,15 @@ const enrichRecord = (record) => ({
 });
 
 const buildSlots = ({ teacherId, date }) => {
+  if (!isReleased(date)) {
+    return slotStarts.map((startTime) => ({
+      startTime,
+      endTime: addMinutes(startTime, 45),
+      status: 'unreleased',
+      reason: '课表尚未释放'
+    }));
+  }
+
   const weekday = new Date(`${date}T12:00:00`).getDay();
   if (weekday === 1) {
     return slotStarts.map((startTime) => ({
@@ -383,7 +392,7 @@ export function mockRequest(path, options = {}) {
   if (pathname === '/payment-code') {
     return Promise.resolve({
       title: '菠菜现代音乐',
-      payee: '菠菜现代音乐总店',
+      payee: '菠菜现代音乐',
       note: '请在正式后台配置微信/支付宝收款二维码；当前为演示占位。',
       image: '/assets/brand/avatar.jpg',
       enabled: false
@@ -441,7 +450,8 @@ export function mockRequest(path, options = {}) {
       rules: {
         openHours: `${teacherById(teacherId).name || '老师'} ${date} 12:00-20:00`,
         release: '次日课表前一天 20:00 后释放',
-        selfChange: '距离开课不足 1.5 小时不可自助改课'
+        selfChange: '距离开课不足 1.5 小时不可自助改课',
+        availability: '老师默认周二至周日 12:00-20:00 全时段可约，后台仅维护请假或不可约例外'
       },
       slots: buildSlots({ teacherId, date })
     });
@@ -449,6 +459,10 @@ export function mockRequest(path, options = {}) {
 
   if (pathname === '/appointments' && options.method === 'POST') {
     const binding = bindingById(options.data.bindingId);
+    if (!isReleased(options.data.date)) return Promise.resolve(null);
+    const bookableSlot = buildSlots({ teacherId: binding.teacher_id, date: options.data.date })
+      .find((item) => item.startTime === options.data.startTime);
+    if (!bookableSlot || bookableSlot.status !== 'available') return Promise.resolve(null);
     const contract = contractById(binding.contract_id);
     const appointment = {
       id: `local-${Date.now()}`,
@@ -486,7 +500,7 @@ export function mockRequest(path, options = {}) {
     const date = query.date || formatDate(1);
     return Promise.resolve({
       date,
-      notice: '同店老师课表可查看但不可代约课；请按时到店，课后长按课程录入学习内容。',
+      notice: '老师默认周二至周日 12:00-20:00 全时段排课；请假或临时不可约由后台维护。学生端约课权限按前一天 20:00 释放。',
       appointments: appointments
         .filter((item) => item.teacher_id === teacherId && item.date === date)
         .map(enrichAppointment)

@@ -1,10 +1,11 @@
 <view class="page">
-  <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="aspectFill" />
+  <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />
   <view class="section-title">校区地址</view>
   <block wx:for="{{campuses}}" wx:key="id">
     <view class="card">
       <view class="row"><view class="card-title">{{item.name}}</view><view class="pill light">{{item.hours}}</view></view>
       <view class="meta">{{item.address}}</view>
+      <view class="meta" wx:if="{{item.desc}}">{{item.desc}}</view>
       <view class="meta">电话 {{item.phone}}</view>
       <button class="btn secondary" data-item="{{item}}" bindtap="openLocation">查看地图</button>
     </view>
