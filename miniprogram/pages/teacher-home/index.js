@@ -1,7 +1,7 @@
 import { request } from '../../utils/request';
 
 Page({
-  data: { courses: [], syncEvents: [] },
+  data: { syncEvents: [] },
   async onLoad() {
     this.load();
   },
@@ -9,8 +9,6 @@ Page({
     this.loadSyncEvents();
   },
   async load() {
-    const courses = await request('/courses') || [];
-    this.setData({ courses });
     this.loadSyncEvents();
   },
   async loadSyncEvents() {

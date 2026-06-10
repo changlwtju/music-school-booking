@@ -1,10 +1,4 @@
-import { request } from '../../utils/request';
-
 Page({
-  data: { courses: [] },
-  async onLoad() {
-    this.setData({ courses: await request('/courses') || [] });
-  },
   enterStudent() {
     const app = getApp();
     app.globalData.role = 'student';

@@ -30,9 +30,9 @@ const isReleased = (date) => {
 };
 
 const courseCatalog = [
-  { id: 'course-piano', name: '钢琴', icon: '🎹', iconClass: 'piano', desc: '启蒙、考级与作品练习' },
-  { id: 'course-guitar', name: '吉他', icon: '🎸', iconClass: 'guitar', desc: '弹唱、和弦与节奏训练' },
-  { id: 'course-drum', name: '架子鼓', icon: '🥁', iconClass: 'drum', desc: '节拍、律动与乐队配合' }
+  { id: 'course-piano', name: '钢琴', desc: '启蒙、考级与作品练习' },
+  { id: 'course-guitar', name: '吉他', desc: '弹唱、和弦与节奏训练' },
+  { id: 'course-drum', name: '架子鼓', desc: '节拍、律动与乐队配合' }
 ];
 
 const campuses = [
