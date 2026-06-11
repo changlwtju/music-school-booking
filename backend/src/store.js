@@ -14,7 +14,9 @@ export const courseCatalog = [
 
 export function createInitialData() {
   const now = new Date().toISOString();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDate(0);
+  const tomorrow = localDate(1);
+  const yesterday = localDate(-1);
   return {
     courses: courseCatalog,
     campuses: [
@@ -65,12 +67,27 @@ export function createInitialData() {
       { id: 'binding-9dbc6ae688', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', status: 'active', created_at: now }
     ],
     appointments: [
-      { id: 'appt-today-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: today, start_time: '15:00', end_time: '15:45', status: 'booked', created_at: now, updated_at: now, cancel_reason: '' },
-      { id: 'appt-today-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: today, start_time: '18:30', end_time: '19:15', status: 'booked', created_at: now, updated_at: now, cancel_reason: '' }
+      { id: 'appt-yesterday-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: yesterday, start_time: '15:00', end_time: '15:45', status: 'completed', lesson_note: '复习基础手型，巩固右手触键。', created_at: now, updated_at: now, cancel_reason: '' },
+      { id: 'appt-today-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: today, start_time: '13:30', end_time: '14:15', status: 'booked', lesson_note: '右手五指练习与节奏稳定。', created_at: now, updated_at: now, cancel_reason: '' },
+      { id: 'appt-tomorrow-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: tomorrow, start_time: '15:45', end_time: '16:30', status: 'booked', lesson_note: '识谱与双手协调预习。', created_at: now, updated_at: now, cancel_reason: '' },
+      { id: 'appt-yesterday-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: yesterday, start_time: '18:30', end_time: '19:15', status: 'completed', lesson_note: '复习拨片控制和开放和弦。', created_at: now, updated_at: now, cancel_reason: '' },
+      { id: 'appt-today-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: today, start_time: '18:30', end_time: '19:15', status: 'booked', lesson_note: '八分音符 riff 与失真音色控制。', created_at: now, updated_at: now, cancel_reason: '' },
+      { id: 'appt-tomorrow-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: tomorrow, start_time: '17:45', end_time: '18:30', status: 'booked', lesson_note: '分解节奏与歌曲段落衔接。', created_at: now, updated_at: now, cancel_reason: '' }
     ],
     teacherAvailability: [],
-    lessonRecords: []
+    lessonRecords: [
+      { id: 'record-yesterday-piano-tang', appointment_id: 'appt-yesterday-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: yesterday, start_time: '15:00', end_time: '15:45', status: 'completed', billable: 1, difficulty: '适中', progress: '基础手型与右手触键', homework: '每天 10 分钟右手五指练习', content: '复习坐姿和手型，练习右手五指连贯触键。', notes: '', created_at: now },
+      { id: 'record-yesterday-guitar-xue', appointment_id: 'appt-yesterday-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: yesterday, start_time: '18:30', end_time: '19:15', status: 'completed', billable: 1, difficulty: '适中', progress: '拨片控制与开放和弦', homework: '慢速练习下拨和上拨各 20 组', content: '复习拨片握法，练习开放和弦切换和基本节奏型。', notes: '', created_at: now }
+    ]
   };
+}
+
+function localDate(offset = 0) {
+  const date = new Date(Date.now() + offset * 24 * 60 * 60 * 1000);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function loadStore() {
@@ -81,7 +98,9 @@ export function loadStore() {
     return data;
   }
   const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-  if (pruneLegacyDemoData(data)) saveStore(data);
+  const pruned = pruneLegacyDemoData(data);
+  const enriched = enrichSparseSchedule(data);
+  if (pruned || enriched) saveStore(data);
   return data;
 }
 
@@ -148,6 +167,109 @@ function pruneLegacyDemoData(data) {
   });
 }
 
+function enrichSparseSchedule(data) {
+  data.appointments ||= [];
+  data.lessonRecords ||= [];
+  const activeBindings = (data.bindings || []).filter((binding) => binding.status === 'active');
+  const teacherIds = new Set(activeBindings.map((binding) => binding.teacher_id));
+  const activeAppointmentCount = data.appointments.filter((item) => teacherIds.has(item.teacher_id)).length;
+  if (activeAppointmentCount >= 10 || activeBindings.length < 2) return false;
+
+  const now = new Date().toISOString();
+  const today = localDate(0);
+  const tomorrow = localDate(1);
+  const yesterday = localDate(-1);
+  const plans = [
+    { date: yesterday, status: 'completed', starts: ['12:45', '15:00', '18:30'] },
+    { date: today, status: 'booked', starts: ['12:00', '13:30', '15:45', '17:45', '18:30', '19:15'] },
+    { date: tomorrow, status: 'booked', starts: ['12:45', '14:15', '16:30', '18:30'] }
+  ];
+  const byTeacher = [...teacherIds].map((teacherId) => activeBindings.filter((binding) => binding.teacher_id === teacherId));
+  const endTime = (startTime) => {
+    const [hour, minute] = startTime.split(':').map(Number);
+    const date = new Date(2000, 0, 1, hour, minute + 45);
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  };
+  let changed = false;
+  for (const appointment of data.appointments) {
+    if (teacherIds.has(appointment.teacher_id) && !appointment.lesson_note) {
+      appointment.lesson_note = lessonNote(appointment.course);
+      appointment.updated_at = now;
+      changed = true;
+    }
+  }
+  for (const [teacherIndex, bindings] of byTeacher.entries()) {
+    for (const plan of plans) {
+      const starts = plan.starts.slice(teacherIndex % 2, teacherIndex % 2 + 3);
+      for (const [slotIndex, startTime] of starts.entries()) {
+        const binding = bindings[(slotIndex + teacherIndex) % bindings.length];
+        const contract = (data.contracts || []).find((item) => item.id === binding.contract_id) || {};
+        const id = `seed-${plan.date}-${binding.teacher_id}-${startTime.replace(':', '')}`;
+        if (data.appointments.some((item) => item.id === id || (item.teacher_id === binding.teacher_id && item.date === plan.date && item.start_time === startTime))) continue;
+        const appointment = {
+          id,
+          student_id: binding.student_id,
+          teacher_id: binding.teacher_id,
+          campus_id: binding.campus_id,
+          contract_id: binding.contract_id,
+          course: binding.course || contract.course,
+          date: plan.date,
+          start_time: startTime,
+          end_time: endTime(startTime),
+          status: plan.status,
+          lesson_note: lessonNote(binding.course || contract.course),
+          created_at: now,
+          updated_at: now,
+          cancel_reason: ''
+        };
+        data.appointments.push(appointment);
+        if (plan.status === 'completed') {
+          data.lessonRecords.push({
+            id: `record-${id}`,
+            appointment_id: id,
+            student_id: appointment.student_id,
+            teacher_id: appointment.teacher_id,
+            campus_id: appointment.campus_id,
+            contract_id: appointment.contract_id,
+            course: appointment.course,
+            date: appointment.date,
+            start_time: appointment.start_time,
+            end_time: appointment.end_time,
+            status: 'completed',
+            billable: 1,
+            difficulty: '适中',
+            progress: lessonProgress(appointment.course),
+            homework: lessonHomework(appointment.course),
+            content: appointment.lesson_note,
+            notes: '',
+            created_at: now
+          });
+        }
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
+
+function lessonNote(course) {
+  if (course === '钢琴') return '识谱、手型与节奏稳定练习。';
+  if (course === '电吉他') return '拨片控制、riff 节奏与音色练习。';
+  return '和弦转换、分解节奏与歌曲段落练习。';
+}
+
+function lessonProgress(course) {
+  if (course === '钢琴') return '基础手型与五指练习';
+  if (course === '电吉他') return '拨片控制与基础 riff';
+  return '开放和弦与节奏型';
+}
+
+function lessonHomework(course) {
+  if (course === '钢琴') return '每天 10 分钟五指练习，保持节拍稳定。';
+  if (course === '电吉他') return '慢速练习下拨上拨各 20 组。';
+  return 'C/G/Am/F 慢速转换 20 组。';
+}
+
 export function resetStore() {
   const fresh = createInitialData();
   Object.keys(store).forEach((key) => delete store[key]);
@@ -185,6 +307,8 @@ export function appointmentView(item) {
     mode: contract.mode,
     total_lessons: contract.total_lessons,
     completed_lessons: contract.completed_lessons,
-    book_level: contract.book_level
+    book_level: contract.book_level,
+    progress: contract.progress,
+    lesson_note: item.lesson_note || ''
   };
 }

@@ -176,8 +176,18 @@ const bindings = [
 ];
 
 const appointments = [
-  { id: 'appt-today-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: formatDate(0), start_time: '15:00', end_time: '15:45', status: 'booked' },
-  { id: 'appt-today-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: formatDate(0), start_time: '18:30', end_time: '19:15', status: 'booked' }
+  { id: 'appt-yesterday-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: formatDate(-1), start_time: '12:45', end_time: '13:30', status: 'completed', lesson_note: '复习基础手型，巩固右手触键。' },
+  { id: 'appt-yesterday-piano-liu', student_id: 'student-acd652d146', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-60a9c338f3', course: '钢琴', date: formatDate(-1), start_time: '15:00', end_time: '15:45', status: 'completed', lesson_note: '识谱与双手协调练习。' },
+  { id: 'appt-today-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: formatDate(0), start_time: '12:00', end_time: '12:45', status: 'booked', lesson_note: '右手五指练习与节奏稳定。' },
+  { id: 'appt-today-piano-liu', student_id: 'student-acd652d146', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-60a9c338f3', course: '钢琴', date: formatDate(0), start_time: '13:30', end_time: '14:15', status: 'booked', lesson_note: '左手伴奏型和视奏训练。' },
+  { id: 'appt-today-piano-tang-late', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: formatDate(0), start_time: '15:45', end_time: '16:30', status: 'booked', lesson_note: '识谱速度与双手配合。' },
+  { id: 'appt-tomorrow-piano-liu', student_id: 'student-acd652d146', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-60a9c338f3', course: '钢琴', date: formatDate(1), start_time: '14:15', end_time: '15:00', status: 'booked', lesson_note: '作品分句和力度控制。' },
+  { id: 'appt-yesterday-guitar-liu', student_id: 'student-acd652d146', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-bfebc23769', course: '吉他', date: formatDate(-1), start_time: '13:30', end_time: '14:15', status: 'completed', lesson_note: '开放和弦转换与扫弦节奏。' },
+  { id: 'appt-yesterday-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: formatDate(-1), start_time: '18:30', end_time: '19:15', status: 'completed', lesson_note: '复习拨片控制和开放和弦。' },
+  { id: 'appt-today-guitar-liu', student_id: 'student-acd652d146', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-bfebc23769', course: '吉他', date: formatDate(0), start_time: '12:45', end_time: '13:30', status: 'booked', lesson_note: 'C/G/Am/F 转换和歌曲段落。' },
+  { id: 'appt-today-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: formatDate(0), start_time: '17:45', end_time: '18:30', status: 'booked', lesson_note: '八分音符 riff 与失真音色控制。' },
+  { id: 'appt-today-guitar-xue-late', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: formatDate(0), start_time: '19:15', end_time: '20:00', status: 'booked', lesson_note: '闷音节奏和小节衔接。' },
+  { id: 'appt-tomorrow-guitar-liu', student_id: 'student-acd652d146', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-bfebc23769', course: '吉他', date: formatDate(1), start_time: '16:30', end_time: '17:15', status: 'booked', lesson_note: '分解节奏与弹唱配合。' }
 ];
 
 const syncEvents = [
@@ -222,6 +232,63 @@ const records = [
     homework: '每天 10 分钟右手触键练习',
     content: '复习坐姿、手型和基础节奏，加入简单识谱。',
     notes: ''
+  },
+  {
+    id: 'record-yesterday-piano-liu',
+    appointment_id: 'appt-yesterday-piano-liu',
+    student_id: 'student-acd652d146',
+    teacher_id: 'teacher-695b7e061b',
+    campus_id: 'campus-2d2207a805',
+    contract_id: 'contract-60a9c338f3',
+    course: '钢琴',
+    date: formatDate(-1),
+    start_time: '15:00',
+    end_time: '15:45',
+    status: 'completed',
+    billable: 1,
+    difficulty: '适中',
+    progress: '识谱与双手协调',
+    homework: '慢速练习左右手分解，每天 10 分钟。',
+    content: '复习识谱，拆分左右手后合手练习。',
+    notes: ''
+  },
+  {
+    id: 'record-yesterday-guitar-liu',
+    appointment_id: 'appt-yesterday-guitar-liu',
+    student_id: 'student-acd652d146',
+    teacher_id: 'teacher-c823a14da0',
+    campus_id: 'campus-2d2207a805',
+    contract_id: 'contract-bfebc23769',
+    course: '吉他',
+    date: formatDate(-1),
+    start_time: '13:30',
+    end_time: '14:15',
+    status: 'completed',
+    billable: 1,
+    difficulty: '适中',
+    progress: '开放和弦与扫弦节奏',
+    homework: 'C/G/Am/F 每组慢速转换 20 遍。',
+    content: '练习开放和弦转换，加入四拍扫弦节奏。',
+    notes: ''
+  },
+  {
+    id: 'record-yesterday-guitar-xue',
+    appointment_id: 'appt-yesterday-guitar-xue',
+    student_id: 'student-19ae2b74d3',
+    teacher_id: 'teacher-c823a14da0',
+    campus_id: 'campus-2d2207a805',
+    contract_id: 'contract-9dbc6ae688',
+    course: '电吉他',
+    date: formatDate(-1),
+    start_time: '18:30',
+    end_time: '19:15',
+    status: 'completed',
+    billable: 1,
+    difficulty: '适中',
+    progress: '拨片控制与开放和弦',
+    homework: '下拨上拨各 20 组，保持节拍器 70。',
+    content: '复习拨片握法，练习开放和弦切换和基本节奏型。',
+    notes: ''
   }
 ];
 
@@ -253,7 +320,9 @@ const enrichAppointment = (appointment) => {
     mode: contract.mode,
     total_lessons: contract.total_lessons,
     completed_lessons: contract.completed_lessons,
-    book_level: contract.book_level || ''
+    book_level: contract.book_level || '',
+    progress: contract.progress || '',
+    lesson_note: appointment.lesson_note || ''
   };
 };
 

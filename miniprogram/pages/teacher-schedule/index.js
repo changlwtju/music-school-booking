@@ -63,17 +63,22 @@ Page({
     const { activeTeacher, activeDate } = this.data;
     if (!activeTeacher.id) return;
     const schedule = await request(`/teachers/${activeTeacher.id}/schedule?date=${activeDate}`) || { appointments: [] };
-    schedule.appointments = (schedule.appointments || []).map((item) => ({
-      ...item,
-      isSynced: item.id === this.data.lastSyncedAppointmentId,
-      modeText: item.lesson_type === 'trial' ? '体验课' : (item.mode === 'fixed20' ? '20课时制' : '按册学习'),
-      progressText: item.lesson_type === 'trial'
+    schedule.appointments = (schedule.appointments || []).map((item) => {
+      const modeText = item.lesson_type === 'trial' ? '体验课' : (item.mode === 'fixed20' ? '20课时制' : '按册学习');
+      const progressText = item.lesson_type === 'trial'
         ? '后台预约'
         : item.mode === 'fixed20'
         ? `已上 ${item.completed_lessons || 0} / ${item.total_lessons || 0}`
-        : item.book_level || '按册学习',
-      statusText: item.status === 'booked' ? '待上课' : item.status
-    }));
+        : item.progress || item.book_level || '按册学习';
+      return {
+        ...item,
+        isSynced: item.id === this.data.lastSyncedAppointmentId,
+        modeText,
+        progressText,
+        lessonNote: item.lesson_note || '',
+        statusText: item.status === 'booked' ? '待上课' : item.status === 'completed' ? '已完成' : item.status
+      };
+    });
     this.setData({
       schedule,
       scheduleStats: {

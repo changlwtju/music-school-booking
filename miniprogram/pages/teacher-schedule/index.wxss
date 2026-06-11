@@ -32,3 +32,12 @@
 .date-tabs {
   margin-top: 14rpx;
 }
+
+.lesson-line {
+  margin-top: 8rpx;
+  color: #3E5F50;
+  font-size: 24rpx;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
