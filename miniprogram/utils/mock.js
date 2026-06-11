@@ -1,6 +1,9 @@
 const formatDate = (offset = 0) => {
   const date = new Date(Date.now() + offset * 24 * 60 * 60 * 1000);
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const parseQuery = (path) => {
@@ -375,6 +378,23 @@ export function mockRequest(path, options = {}) {
       user: { id: 'user-student-a4e31feaf1', role: 'student', name: '唐鹏', status: 'active' },
       profile: students[0]
     });
+  }
+
+  if (pathname === '/auth/role-login' && options.method === 'POST') {
+    const role = options.data?.role === 'teacher' ? 'teacher' : 'student';
+    const phone = String(options.data?.phone || '').trim();
+    if (role === 'teacher') {
+      const teacher = teachers.find((item) => String(item.phone || '').trim() === phone) || (!phone ? teachers[0] : null);
+      return Promise.resolve(teacher ? {
+        user: { id: `access-${teacher.id}`, role: 'teacher', name: teacher.name, phone, status: 'active' },
+        profile: teacher
+      } : null);
+    }
+    const student = students.find((item) => String(item.phone || '').trim() === phone);
+    return Promise.resolve(student ? {
+      user: { id: `access-${student.id}`, role: 'student', name: student.name, phone, status: 'active' },
+      profile: student
+    } : null);
   }
 
   if (pathname === '/payment-code') {

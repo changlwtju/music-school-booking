@@ -6,6 +6,7 @@ App({
     campusId: 'campus-2d2207a805',
     lastSyncedAppointmentId: '',
     lastSyncedDate: '',
+    enableDemoLogin: true,
     role: ''
   }
 });

@@ -42,6 +42,12 @@ export function createInitialData() {
       { id: 'user-student-a4e31feaf1', openid: 'demo-student-a4e31feaf1', name: '唐鹏', phone: '', role: 'student', status: 'active' },
       { id: 'user-student-19ae2b74d3', openid: 'demo-student-19ae2b74d3', name: '薛冬瑞', phone: '', role: 'student', status: 'active' }
     ],
+    accessUsers: [
+      { id: 'access-teacher-695b7e061b', role: 'teacher', profile_id: 'teacher-695b7e061b', name: '刘芗齐', phone: '', status: 'active', notes: '默认老师端访问权限' },
+      { id: 'access-teacher-c823a14da0', role: 'teacher', profile_id: 'teacher-c823a14da0', name: '闻俊浩', phone: '', status: 'active', notes: '默认老师端访问权限' },
+      { id: 'access-student-a4e31feaf1', role: 'student', profile_id: 'student-a4e31feaf1', name: '唐鹏', phone: '', status: 'active', notes: '默认学生端访问权限' },
+      { id: 'access-student-19ae2b74d3', role: 'student', profile_id: 'student-19ae2b74d3', name: '薛冬瑞', phone: '', status: 'active', notes: '默认学生端访问权限' }
+    ],
     students: [
       { id: 'student-a4e31feaf1', user_id: 'user-student-a4e31feaf1', campus_id: 'campus-2d2207a805', name: '唐鹏', phone: '', avatar: '/assets/brand/avatar.png', enrolled_at: '2026-03-22', expires_at: '2027-03-22', payment_status: 'pending', status: 'active', notes: '报名有效期一年；按册学习；完成课程记录后计入当节有效课时。' },
       { id: 'student-19ae2b74d3', user_id: 'user-student-19ae2b74d3', campus_id: 'campus-2d2207a805', name: '薛冬瑞', phone: '', avatar: '/assets/brand/avatar.png', enrolled_at: '2026-05-29', expires_at: '2027-05-29', payment_status: 'pending', status: 'active', notes: '电吉他课程。' }

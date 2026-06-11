@@ -45,6 +45,7 @@
         <button class="nav-item active" data-view="dashboard">总览</button>
         <button class="nav-item" data-view="students">学员</button>
         <button class="nav-item" data-view="teachers">老师</button>
+        <button class="nav-item" data-view="access">访问权限</button>
         <button class="nav-item" data-view="campuses">地址管理</button>
         <button class="nav-item" data-view="schedule">课表</button>
       </nav>
@@ -227,6 +228,38 @@
               </tr>
             </thead>
           <tbody id="teachersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="accessView" class="view hidden">
+        <details class="form-card" open>
+          <summary>开通小程序访问</summary>
+          <form id="accessForm" class="admin-form">
+            <label><span>身份</span><select name="role" required><option value="student">学生端</option><option value="teacher">老师端</option></select></label>
+            <label><span>关联档案</span><select name="profileId" id="accessProfile" required></select></label>
+            <label><span>显示姓名</span><input name="name" /></label>
+            <label><span>登录手机号</span><input name="phone" required /></label>
+            <label><span>状态</span><select name="status"><option value="active">允许访问</option><option value="inactive">停用</option></select></label>
+            <label class="span-2"><span>备注</span><input name="notes" placeholder="例如体验账号、家长手机号等" /></label>
+            <button type="submit">保存权限</button>
+            <p id="accessFormMessage" class="form-message"></p>
+          </form>
+        </details>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>身份</th>
+                <th>姓名</th>
+                <th>手机号</th>
+                <th>关联档案</th>
+                <th>校区</th>
+                <th>状态</th>
+                <th>备注</th>
+              </tr>
+            </thead>
+            <tbody id="accessBody"></tbody>
           </table>
         </div>
       </section>

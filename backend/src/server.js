@@ -116,6 +116,51 @@ function normalizeTeacherStatus(value) {
   return 'active';
 }
 
+function ensureAccessUsers() {
+  store.accessUsers ||= [];
+  for (const teacher of store.teachers || []) {
+    if (!store.accessUsers.some((item) => item.role === 'teacher' && item.profile_id === teacher.id)) {
+      store.accessUsers.push({
+        id: stableId('access-teacher', teacher.id),
+        role: 'teacher',
+        profile_id: teacher.id,
+        name: teacher.name,
+        phone: teacher.phone || '',
+        status: teacher.status || 'active',
+        notes: '由老师档案自动生成'
+      });
+    }
+  }
+  for (const student of store.students || []) {
+    if (!store.accessUsers.some((item) => item.role === 'student' && item.profile_id === student.id)) {
+      store.accessUsers.push({
+        id: stableId('access-student', student.id),
+        role: 'student',
+        profile_id: student.id,
+        name: student.name,
+        phone: student.phone || '',
+        status: student.status || 'active',
+        notes: '由学员档案自动生成'
+      });
+    }
+  }
+}
+
+function accessRows() {
+  ensureAccessUsers();
+  return (store.accessUsers || []).map((item) => {
+    const profile = item.role === 'teacher'
+      ? (store.teachers || []).find((teacher) => teacher.id === item.profile_id)
+      : (store.students || []).find((student) => student.id === item.profile_id);
+    return {
+      ...item,
+      profile_name: profile?.name || '',
+      campus_name: campusName(profile?.campus_id),
+      course: profile?.primary_course || ''
+    };
+  }).sort((a, b) => String(a.role).localeCompare(String(b.role)) || String(a.name).localeCompare(String(b.name), 'zh-Hans-CN'));
+}
+
 function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
   const normalized = String(keyword || '').trim();
   return (store.bindings || [])
@@ -543,6 +588,39 @@ app.post('/admin/api/students', requireAdmin, (req, res) => {
   ok(res, adminStudentRows({}).find((item) => item.binding_id === bindingId));
 });
 
+app.get('/admin/api/access-users', requireAdmin, (_req, res) => {
+  ok(res, accessRows());
+});
+
+app.post('/admin/api/access-users', requireAdmin, (req, res) => {
+  const parsed = z.object({
+    role: z.enum(['student', 'teacher']),
+    profileId: z.string().min(1),
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    status: z.string().optional(),
+    notes: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '访问权限信息不完整');
+  const profile = parsed.data.role === 'teacher'
+    ? (store.teachers || []).find((item) => item.id === parsed.data.profileId)
+    : (store.students || []).find((item) => item.id === parsed.data.profileId);
+  if (!profile) return fail(res, 404, '关联档案不存在');
+  const item = {
+    id: stableId('access', parsed.data.role, parsed.data.profileId),
+    role: parsed.data.role,
+    profile_id: parsed.data.profileId,
+    name: parsed.data.name || profile.name,
+    phone: parsed.data.phone || profile.phone || '',
+    status: parsed.data.status === 'inactive' ? 'inactive' : 'active',
+    notes: parsed.data.notes || ''
+  };
+  store.accessUsers ||= [];
+  upsertById(store.accessUsers, item);
+  saveStore(store);
+  ok(res, item);
+});
+
 app.get('/admin/api/appointments', requireAdmin, (req, res) => {
   const { date = '', teacherId = '', status = '' } = req.query;
   const data = (store.appointments || [])
@@ -676,6 +754,36 @@ app.post('/auth/demo-login', (req, res) => {
     ? store.teachers.find((item) => item.user_id === user.id)
     : store.students.find((item) => item.user_id === user.id);
   ok(res, { user, profile });
+});
+
+app.post('/auth/role-login', (req, res) => {
+  const parsed = z.object({
+    role: z.enum(['student', 'teacher']),
+    phone: z.string().min(1)
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '请输入手机号');
+  ensureAccessUsers();
+  const phone = parsed.data.phone.trim();
+  const access = (store.accessUsers || []).find((item) => (
+    item.role === parsed.data.role
+    && item.status === 'active'
+    && String(item.phone || '').trim() === phone
+  ));
+  if (!access) return fail(res, 403, '未开通该身份的小程序访问权限，请联系琴行后台添加');
+  const profile = parsed.data.role === 'teacher'
+    ? (store.teachers || []).find((item) => item.id === access.profile_id && item.status === 'active')
+    : (store.students || []).find((item) => item.id === access.profile_id && item.status === 'active');
+  if (!profile) return fail(res, 403, '关联档案已停用，请联系琴行');
+  ok(res, {
+    user: {
+      id: access.id,
+      name: access.name || profile.name,
+      phone: access.phone,
+      role: access.role,
+      status: access.status
+    },
+    profile
+  });
 });
 
 app.get('/campuses', (_req, res) => ok(res, (store.campuses || []).filter((item) => item.status !== 'inactive')));
@@ -977,6 +1085,7 @@ app.get('/teachers/:teacherId/schedule', (req, res) => {
 
 app.get('/teachers/:teacherId/students', (req, res) => {
   const keyword = String(req.query.keyword || '').trim();
+  const filter = String(req.query.filter || 'active');
   const data = store.bindings
     .filter((item) => item.teacher_id === req.params.teacherId)
     .map((binding) => {
@@ -990,9 +1099,15 @@ app.get('/teachers/:teacherId/students', (req, res) => {
         contract_status: contract.status,
         total_lessons: contract.total_lessons,
         completed_lessons: contract.completed_lessons,
+        remaining_lessons: contractRemainingLessons(contract),
         book_level: contract.book_level,
         progress: contract.progress
       };
+    })
+    .filter((item) => {
+      if (filter === 'all') return true;
+      if (filter === 'installment') return item.payment_status === 'installment';
+      return item.status === filter;
     })
     .filter((item) => !keyword || [item.name, item.phone, item.course].some((value) => String(value || '').includes(keyword)));
   ok(res, data);

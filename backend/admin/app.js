@@ -8,6 +8,7 @@ const state = {
   campuses: [],
   courses: [],
   appointments: [],
+  accessUsers: [],
   slots: []
 };
 
@@ -72,6 +73,10 @@ function appointmentStatusLabel(value) {
     completed: '已完成',
     cancelled: '已取消'
   }[value] || value || '-';
+}
+
+function roleLabel(value) {
+  return value === 'teacher' ? '老师端' : '学生端';
 }
 
 function addressStatusLabel(value) {
@@ -210,6 +215,20 @@ function renderAppointmentSync() {
   `).join('');
 }
 
+function renderAccessUsers() {
+  el('accessBody').innerHTML = state.accessUsers.map((item) => `
+    <tr>
+      <td>${roleLabel(item.role)}</td>
+      <td>${item.name || item.profile_name || '-'}</td>
+      <td>${item.phone || '-'}</td>
+      <td>${item.profile_name || '-'}</td>
+      <td>${item.campus_name || '-'}</td>
+      <td><span class="tag">${item.status === 'inactive' ? '停用' : '允许访问'}</span></td>
+      <td>${item.notes || '-'}</td>
+    </tr>
+  `).join('');
+}
+
 function renderStudents() {
   el('studentsBody').innerHTML = state.students.map((student) => `
     <tr>
@@ -276,6 +295,24 @@ function renderSelects() {
       ${course.name}
     </label>
   `).join('');
+  renderAccessProfileOptions();
+}
+
+function renderAccessProfileOptions() {
+  if (!el('accessProfile')) return;
+  const seenStudents = new Set();
+  const studentOptions = state.students
+    .filter((student) => {
+      if (!student.student_id || seenStudents.has(student.student_id)) return false;
+      seenStudents.add(student.student_id);
+      return true;
+    })
+    .map((student) => `<option value="${student.student_id}" data-role="student">学生 · ${student.name} · ${student.course || ''}</option>`);
+  const profileOptions = [
+    ...studentOptions,
+    ...state.teachers.map((teacher) => `<option value="${teacher.id}" data-role="teacher">老师 · ${teacher.name} · ${teacher.primary_course || ''}</option>`)
+  ];
+  el('accessProfile').innerHTML = profileOptions.join('');
 }
 
 function renderSlots() {
@@ -296,11 +333,12 @@ function setView(view) {
   });
   document.querySelectorAll('.view').forEach((node) => node.classList.add('hidden'));
   el(`${view}View`).classList.remove('hidden');
-  el('pageTitle').textContent = { dashboard: '总览', students: '学员', teachers: '老师', campuses: '地址管理', schedule: '课表' }[view];
+  el('pageTitle').textContent = { dashboard: '总览', students: '学员', teachers: '老师', access: '访问权限', campuses: '地址管理', schedule: '课表' }[view];
   el('pageSubtitle').textContent = {
     dashboard: '服务器运行数据',
     students: '按老师、状态和关键词筛选',
     teachers: '老师资料和授课乐器',
+    access: '控制谁可以进入学生端或老师端',
     campuses: '门店地址、导航资料和后续新店预留',
     schedule: '固定课节与临时不可约时段'
   }[view];
@@ -349,6 +387,11 @@ async function loadAppointments() {
   renderAppointmentSync();
 }
 
+async function loadAccessUsers() {
+  state.accessUsers = await api('/admin/api/access-users');
+  renderAccessUsers();
+}
+
 async function loadStudents() {
   const params = new URLSearchParams({
     keyword: el('studentKeyword').value.trim(),
@@ -357,6 +400,7 @@ async function loadStudents() {
   });
   state.students = await api(`/admin/api/students?${params.toString()}`);
   renderStudents();
+  renderAccessProfileOptions();
 }
 
 async function loadAll() {
@@ -367,6 +411,7 @@ async function loadAll() {
   await loadDashboard();
   await loadStudents();
   await loadAppointments();
+  await loadAccessUsers();
 }
 
 el('loginForm').addEventListener('submit', async (event) => {
@@ -405,6 +450,12 @@ el('studentStatus').addEventListener('change', loadStudents);
 el('appointmentDate').addEventListener('change', loadAppointments);
 el('appointmentTeacher').addEventListener('change', loadAppointments);
 el('appointmentStatus').addEventListener('change', loadAppointments);
+el('accessForm').elements.role.addEventListener('change', (event) => {
+  const role = event.currentTarget.value;
+  const options = [...el('accessProfile').options];
+  const matched = options.find((option) => option.dataset.role === role);
+  if (matched) el('accessProfile').value = matched.value;
+});
 
 el('studentForm').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -437,6 +488,22 @@ el('teacherForm').addEventListener('submit', async (event) => {
     message.textContent = '老师已保存';
     event.currentTarget.reset();
     await loadAll();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+el('accessForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const message = el('accessFormMessage');
+  const data = formJson(event.currentTarget);
+  const selectedProfile = el('accessProfile').selectedOptions[0];
+  if (selectedProfile?.dataset.role) data.role = selectedProfile.dataset.role;
+  try {
+    await api('/admin/api/access-users', { method: 'POST', body: JSON.stringify(data) });
+    message.textContent = '访问权限已保存';
+    event.currentTarget.reset();
+    await loadAccessUsers();
   } catch (error) {
     message.textContent = error.message;
   }
