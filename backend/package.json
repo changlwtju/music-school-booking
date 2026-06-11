@@ -6,13 +6,15 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "import:music-school": "node scripts/import-music-school-data.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",
     "express": "^4.21.2",
     "nanoid": "^5.1.5",
+    "xlsx": "^0.18.5",
     "zod": "^3.24.2"
   },
   "devDependencies": {

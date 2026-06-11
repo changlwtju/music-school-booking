@@ -20,6 +20,17 @@ npm run dev
 
 默认接口地址为 `http://localhost:3010`。轻量服务器部署时可复制 `backend/.env.example` 为 `.env`，设置 `PORT`、`DATABASE_PATH`，后续再补微信 `appid/secret` 登录。
 
+导入真实琴行数据：
+
+```bash
+cd backend
+npm run import:music-school -- --dry-run
+DATABASE_PATH=/var/lib/spinach-music/spinach-music.json npm run import:music-school
+sudo systemctl restart spinach-music-api
+```
+
+默认读取 `docs/data-templates/music-school-import/music-school-import-current-yidian.xlsx`，导入前会自动备份当前 JSON 数据库。服务器已产生真实业务数据后不要再执行 `npm run seed`。
+
 小程序：
 
 1. 用微信开发者工具导入 `miniprogram/`。
