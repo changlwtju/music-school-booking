@@ -104,6 +104,16 @@ app.get('/health', (_req, res) => ok(res, { status: 'ok' }));
 
 app.get('/courses', (_req, res) => ok(res, store.courses || courseCatalog));
 
+app.get('/payment-code', (_req, res) => {
+  ok(res, {
+    title: '菠菜现代音乐',
+    payee: '菠菜现代音乐',
+    note: '请在正式后台配置微信/支付宝收款二维码；当前为演示占位。',
+    image: '/assets/brand/avatar.jpg',
+    enabled: false
+  });
+});
+
 app.get('/sync-events', (req, res) => {
   ok(res, syncEvents({
     teacherId: req.query.teacherId,
