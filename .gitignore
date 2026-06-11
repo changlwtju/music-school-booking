@@ -8,3 +8,5 @@ npm-debug.log*
 __pycache__/
 *.pyc
 miniprogram/project.private.config.json
+docs/data-templates/*.numbers
+docs/data-templates/music-school-import/*current*.xlsx

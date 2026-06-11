@@ -103,9 +103,9 @@
 - 正式上线前建议增加进程管理、日志、备份和 HTTPS 反向代理。
 - 正式微信登录需要接入小程序 AppID、AppSecret 和 `wx.login` code 换取 OpenID。
 
-服务器初步选型：
+服务器初步选型与当前状态：
 
-- 首选阿里云轻量应用服务器通用型 2 vCPU、2 GiB 内存、40 GiB 系统盘、Ubuntu 24.04。
+- 早期曾按阿里云轻量应用服务器估算，当前实际已购买腾讯云轻量应用服务器，后端部署步骤以腾讯云 Ubuntu 服务器为准。
 - 当前业务属于低到中等并发的小程序后端，访问高峰主要集中在学生约课、改课和老师查看课表时段。
 - 以本市 4 家线下培训机构估算，早期更可能是几百名活跃学生、每天几十到数百次预约相关操作，2 核 2G 足够支撑第一版上线和试运营。
 - 不建议选择 0.5 GiB 或 1 GiB 内存规格，后端服务、数据库、Nginx、日志和系统进程同时运行时余量太小。
@@ -113,6 +113,7 @@
 - 4 vCPU、8 GiB 及以上规格暂不建议一开始购买，等监控数据证明 CPU、内存或连接数长期接近瓶颈后再升级。
 - 业务图片、合同附件等文件不建议长期存放在服务器本地磁盘，后续应优先考虑对象存储，服务器磁盘主要用于系统、应用、数据库和日志。
 - 中国内地服务器对外提供服务需要提前准备域名、ICP备案和 HTTPS 证书。
+- 当前营业执照、小程序主体和正式域名尚未完成，因此可以先部署后端并用公网 IP 调试；正式小程序上线前再补齐域名、备案、HTTPS 和微信小程序后台合法域名配置。
 
 ### 阶段四：数据模型与接口设计
 
@@ -493,23 +494,196 @@ curl "http://localhost:3010/teachers/teacher-lin/schedule?date=2026-06-10"
 4. 本地联调时保持后端运行在 `http://localhost:3010`。
 5. 如果后端没启动，小程序会自动使用 mock 数据展示页面。
 
-轻量服务器部署建议：
+腾讯云轻量服务器部署步骤：
 
-- 购买服务器后，先安装 Node.js LTS、Nginx 和进程管理工具。
-- 上传或拉取项目代码。
-- 进入 `backend/` 执行：
+当前后端实际技术栈：
+
+- 后端目录：`backend/`。
+- 启动入口：`backend/src/server.js`。
+- 启动命令：`npm start`。
+- 默认端口：`3010`。
+- 当前持久化方式：JSON 文件数据库，不是 SQLite。
+- 数据文件由 `DATABASE_PATH` 指定。服务器上建议放到 `/var/lib/spinach-music/spinach-music.json`，不要放在代码目录里，避免后续发布代码时误覆盖运行数据。
+
+登录腾讯云服务器：
 
 ```bash
-npm install --omit=dev
-npm run seed
-PORT=3010 npm start
+ssh ubuntu@你的服务器公网IP
 ```
 
-- 生产环境建议使用 PM2 或 systemd 托管进程。
-- 使用 Nginx 将 HTTPS 域名反向代理到 `127.0.0.1:3010`。
-- 微信小程序正式请求必须使用 HTTPS 域名，不能直接使用本地 `localhost`。
-- 中国内地服务器对外提供服务通常需要域名备案和 HTTPS 证书。
-- `backend/data/` 是运行数据目录，已经加入 `.gitignore`，上线后需要单独备份。
+安装基础环境：
+
+```bash
+sudo apt update
+sudo apt install -y git curl nginx ufw
+
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
+sudo apt install -y nodejs
+
+node -v
+npm -v
+```
+
+拉取项目代码。若服务器已配置 GitHub SSH key：
+
+```bash
+cd /home/ubuntu
+git clone git@github.com:changlwtju/music-school-booking.git
+cd /home/ubuntu/music-school-booking
+```
+
+若暂未配置 SSH key，可先用 HTTPS：
+
+```bash
+cd /home/ubuntu
+git clone https://github.com/changlwtju/music-school-booking.git
+cd /home/ubuntu/music-school-booking
+```
+
+创建后端环境变量：
+
+```bash
+sudo mkdir -p /var/lib/spinach-music
+sudo chown -R ubuntu:ubuntu /var/lib/spinach-music
+
+cat > /home/ubuntu/music-school-booking/backend/.env <<'EOF'
+PORT=3010
+DATABASE_PATH=/var/lib/spinach-music/spinach-music.json
+WECHAT_APP_ID=
+WECHAT_APP_SECRET=
+EOF
+```
+
+安装依赖并初始化演示数据：
+
+```bash
+cd /home/ubuntu/music-school-booking/backend
+npm ci --omit=dev
+npm run seed
+```
+
+注意：`npm run seed` 会重置数据。第一次部署可以执行；一旦服务器里已经产生真实预约、学生、合同或上课记录数据，后续更新代码时不要再随意执行。
+
+使用 systemd 托管后端进程：
+
+```bash
+sudo tee /etc/systemd/system/spinach-music-api.service > /dev/null <<'EOF'
+[Unit]
+Description=Spinach Music Booking API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/music-school-booking/backend
+EnvironmentFile=/home/ubuntu/music-school-booking/backend/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=3
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable spinach-music-api
+sudo systemctl restart spinach-music-api
+sudo systemctl status spinach-music-api --no-pager
+```
+
+在服务器本机验证：
+
+```bash
+curl http://127.0.0.1:3010/health
+curl http://127.0.0.1:3010/courses
+curl http://127.0.0.1:3010/campuses
+```
+
+若要临时用公网 IP 直接调试 `3010` 端口：
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 3010/tcp
+sudo ufw --force enable
+sudo ufw status
+```
+
+电脑本地验证：
+
+```bash
+curl http://你的服务器公网IP:3010/health
+```
+
+可选：用 Nginx 代理到 80 端口，便于临时访问 `http://服务器公网IP/health`：
+
+```bash
+sudo tee /etc/nginx/sites-available/spinach-music-api > /dev/null <<'EOF'
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOF
+
+sudo ln -sf /etc/nginx/sites-available/spinach-music-api /etc/nginx/sites-enabled/spinach-music-api
+sudo rm -f /etc/nginx/sites-enabled/default
+
+sudo nginx -t
+sudo systemctl reload nginx
+
+sudo ufw allow 80/tcp
+sudo ufw reload
+sudo ufw status verbose
+```
+
+验证 Nginx 代理：
+
+```bash
+PUBLIC_IP=$(curl -s ifconfig.me)
+echo $PUBLIC_IP
+curl http://127.0.0.1/health
+curl -m 5 http://$PUBLIC_IP/health
+```
+
+后续更新服务器代码：
+
+```bash
+cd /home/ubuntu/music-school-booking
+git pull
+
+cd backend
+npm ci --omit=dev
+
+sudo systemctl restart spinach-music-api
+sudo systemctl status spinach-music-api --no-pager
+curl http://127.0.0.1/health
+```
+
+小程序临时联调：
+
+- 当前已将 `miniprogram/app.js` 中的 `apiBase` 临时改为 `http://49.233.131.93`，开发者工具会优先请求腾讯云后端。
+- 如需回到纯前端 mock 演示，可把 `apiBase` 改回空字符串。
+- 如果绕过 Nginx 直接调试 3010 端口，可临时改成 `http://49.233.131.93:3010`。
+- 微信开发者工具联调时可临时勾选“不校验合法域名、TLS 版本以及 HTTPS 证书”。
+- 正式上线前不能使用公网 IP 或 HTTP 地址，需要改为已备案、已配置 HTTPS、并已加入微信小程序后台 request 合法域名的正式域名。
+
+本次实际部署结果：
+
+- 腾讯云服务器公网 IP 为 `49.233.131.93`。
+- `spinach-music-api.service` 已设置为开机自启并运行成功。
+- 后端本机健康检查 `curl http://127.0.0.1:3010/health` 成功。
+- Nginx 已反向代理 80 端口到 `127.0.0.1:3010`。
+- 服务器内部 `ufw` 需要同时放行 `80/tcp` 和 `3010/tcp`；本次公网 80 端口初次超时就是因为 `ufw` 漏放了 `80/tcp`。
+- 腾讯云实例防火墙已放行 `22`、`80`、`3010` 和 Ping。
+- 公网健康检查 `curl http://49.233.131.93/health` 已返回 `{"data":{"status":"ok"}}`。
+
+当前因营业执照、小程序主体和正式域名尚未完成，部署目标先定为“后端可运行、接口可调试、业务流程可验证”，正式审核上线流程放到主体注册和域名备案之后。
 
 本次加入的版本控制忽略项：
 
@@ -532,6 +706,7 @@ npm-debug.log*
 - 管理员代约课、代改课、代取消的操作日志。
 - 预约并发在真实数据库中的事务锁或唯一约束方案。
 - 从 JSON 文件存储迁移到 SQLite、MySQL 或 PostgreSQL 的方案。
+- 真实数据导入模板已放在 `docs/data-templates/music-school-import/`，后续一店、二店老师和学生资料优先填写 `music-school-import-template.xlsx`。
 
 下一步：
 
@@ -1080,6 +1255,115 @@ node --check miniprogram/pages/teacher-schedule/index.js
 node --check miniprogram/utils/mock.js
 git diff --check
 ```
+
+### 2026-06-11：整理腾讯云后端从零部署命令
+
+本次目标：
+
+- 切回琴行约课小程序开发后，先处理项目本身的后端部署准备。
+- 明确 `music-school-booking` 项目的后端目录、启动方式、数据库配置和腾讯云轻量服务器部署命令。
+- 在营业执照、小程序主体和正式域名尚未完成前，先让后端能在服务器上跑起来，便于接口和业务流程验证。
+
+前置状态：
+
+- 当前已购买腾讯云轻量服务器。
+- 营业执照尚未注册完成，暂时不能注册以营业执照为主体的小程序，也暂时没有正式域名和备案。
+- 小程序开发工具可先使用 mock 数据或临时公网 IP 联调，但正式上线前仍需要 HTTPS 域名和微信小程序后台合法域名配置。
+
+项目核查结果：
+
+- 后端目录为 `backend/`。
+- 后端入口为 `backend/src/server.js`。
+- 后端启动命令为 `npm start`。
+- 后端默认监听端口为 `3010`。
+- 当前后端实际为 Node.js + Express + JSON 文件存储。
+- 数据文件由 `DATABASE_PATH` 控制，服务器部署建议设置为 `/var/lib/spinach-music/spinach-music.json`。
+- README 中早期曾写到 SQLite，但当前代码没有 SQLite 依赖，实际运行以 JSON 文件存储为准。
+
+关键部署决策：
+
+- 第一阶段不急着接正式域名，先把 API 服务、systemd 托管、Nginx 反向代理和基础验证跑通。
+- 第一次部署可以执行 `npm run seed` 初始化演示数据；后续产生真实业务数据后，不应再随意执行 seed，以免重置数据。
+- 运行数据不放在代码目录下，而是放在 `/var/lib/spinach-music/`，便于后续 `git pull` 更新代码时保护数据。
+- 当前可用公网 IP 和 HTTP 做开发联调；正式小程序提审前再切换为备案域名、HTTPS 证书和微信后台 request 合法域名。
+
+已同步到教程的内容：
+
+- 腾讯云 Ubuntu 服务器基础环境安装命令。
+- GitHub 拉取项目命令。
+- `.env` 生产配置示例。
+- `npm ci --omit=dev` 和首次 seed 命令。
+- `spinach-music-api.service` 的 systemd 配置。
+- `/health`、`/courses`、`/campuses` 接口验证命令。
+- 防火墙临时开放 `3010` 端口的命令。
+- Nginx 代理到 80 端口的可选配置。
+- 后续更新代码的 `git pull`、安装依赖、重启服务和健康检查命令。
+- 小程序 `apiBase` 从 mock 切换到服务器公网 IP 的临时联调方式。
+
+实际执行结果：
+
+- 服务器登录用户为 `ubuntu`，因此系统安装、Nginx、systemd、ufw 等命令均需要使用 `sudo`。
+- Node.js、npm、Git、Nginx、ufw 已安装完成。
+- 项目已部署到 `/home/ubuntu/music-school-booking`。
+- 运行数据目录已设置为 `/var/lib/spinach-music/`。
+- 后端服务 `spinach-music-api.service` 已成功启动并启用开机自启。
+- `curl http://127.0.0.1:3010/health` 返回 `{"data":{"status":"ok"}}`。
+- Nginx 配置已通过 `sudo nginx -t` 校验，并成功代理到后端。
+- 腾讯云实例防火墙和服务器 `ufw` 均已放行 `80`，公网访问 `http://49.233.131.93/health` 成功。
+- 小程序 `miniprogram/app.js` 中的 `apiBase` 已临时改为 `http://49.233.131.93`。
+
+服务器后续更新命令：
+
+```bash
+cd /home/ubuntu/music-school-booking
+git pull
+
+cd backend
+npm ci --omit=dev
+
+sudo systemctl restart spinach-music-api
+sudo systemctl status spinach-music-api --no-pager
+curl http://127.0.0.1/health
+```
+
+注意：后续服务器产生真实预约、学生、合同或上课记录后，不要再执行 `npm run seed`，否则会重置 JSON 数据库。
+
+下一步：
+
+- 在微信开发者工具中重新编译小程序，确认页面请求腾讯云后端。
+- 继续补管理端能力、正式登录和真实业务数据维护能力。
+- 小程序主体和正式域名准备好后，再补 HTTPS、备案、合法域名配置和正式登录能力。
+
+### 2026-06-11：建立一店二店真实数据导入模板
+
+本次目标：
+
+- 为即将整理上传的一店、二店老师和学生信息建立标准导入模板。
+- 用中文表头降低填写成本，并为每个字段写清楚含义和填写方式。
+- 将原本复杂的多张表收拢成一个 Excel 文件，并按 Sheet 分为校区信息、老师信息、学生信息和填写说明，方便手工整理。
+- 学生信息先保留第一批导入最需要的字段，后续如果需要合同附件、历史预约、历史上课记录等，再继续补充。
+- 填写内容尽量使用中文，例如 `固定课时`、`按册学习`、`分期`、`在读`，降低第一次填写的理解成本。
+- 为后续编写 Excel 到 JSON 数据库的导入脚本做准备。
+
+新增文件：
+
+- `docs/data-templates/music-school-import/README.md`：填写说明总览。
+- `docs/data-templates/music-school-import/music-school-import-template.xlsx`：推荐优先填写的 Excel 模板，包含 `校区信息`、`老师信息`、`学生信息` 和 `填写说明` 四个工作表。
+
+关键决策：
+
+- 第一批真实数据建议优先填写 `music-school-import-template.xlsx`。
+- 该 Excel 是一个总文件，但按 Sheet 分开填写：校区信息、老师信息、学生信息。
+- 一个学生如果有多门课程，就在 `学生信息` 工作表里填写多行。
+- 不再要求填写系统编号、合同内部编号、绑定编号等技术字段，后续由导入脚本自动生成。
+- 课程类型、缴费状态、在读状态优先使用中文：`固定课时`、`按册学习`、`已付清`、`分期`、`体验课`、`在读`、`停用`、`已到期`。
+- 历史预约、历史上课记录、合同附件、财务结算等信息暂不放入第一版模板，后续需要时再补。
+
+下一步：
+
+- 按 `music-school-import-template.xlsx` 整理真实一店、二店资料。
+- 根据模板编写导入脚本，把 Excel 内容转换为当前后端的 JSON 数据结构。
+- 先在本地验证导入结果，再同步到腾讯云服务器的 `/var/lib/spinach-music/spinach-music.json`。
 
 ## 6. 待确认问题
 
