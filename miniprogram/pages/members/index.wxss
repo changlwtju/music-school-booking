@@ -32,3 +32,16 @@
 }
 
 .installment { color: #b6483b; }
+
+.member-status {
+  margin-top: 10rpx;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40rpx;
+  padding: 0 16rpx;
+  border-radius: 999rpx;
+  background: rgba(83, 157, 115, 0.12);
+  color: #4B966A;
+  font-size: 22rpx;
+  font-weight: 700;
+}

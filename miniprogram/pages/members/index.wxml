@@ -4,15 +4,16 @@
     <input class="input search-input" placeholder="搜索姓名、手机号、课程" value="{{keyword}}" bindinput="onInput" confirm-type="search" bindconfirm="load" />
   </view>
   <view class="tabs">
-    <view wx:for="{{filters}}" wx:key="value" class="tab {{activeFilter === item.value ? 'active' : ''}}" data-value="{{item.value}}" bindtap="selectFilter">{{item.label}}</view>
+    <view wx:for="{{filters}}" wx:key="value" class="tab {{activeFilter === item.value ? 'active' : ''}}" data-value="{{item.value}}" bindtap="selectFilter">{{item.displayLabel || item.label}}</view>
   </view>
   <block wx:for="{{members}}" wx:key="id">
     <view class="card">
       <view class="row"><view class="card-title {{item.payment_status === 'installment' ? 'installment' : ''}}">{{item.name}}</view><view class="pill light">{{item.course}}</view></view>
       <view class="meta">{{item.phone}} · {{item.campus_name}}</view>
-      <view class="meta">报名 {{item.enrolled_at}} · 进度 {{item.progress}}</view>
-      <view class="meta" wx:if="{{item.remaining_lessons !== null}}">已上 {{item.completed_lessons}} 节 · 剩余 {{item.remaining_lessons}} 节</view>
-      <view class="meta" wx:else>册别 {{item.book_level}} · 已上 {{item.completed_lessons}} 节</view>
+      <view class="meta">报名 {{item.enrolled_at}} · 到期 {{item.expiresText}}</view>
+      <view class="meta">进度 {{item.progressText}}</view>
+      <view class="meta">{{item.lessonText}}</view>
+      <view class="member-status">{{item.statusText}}</view>
     </view>
   </block>
   <view wx:if="{{!members.length}}" class="empty">没有匹配的会员</view>

@@ -21,7 +21,7 @@
 
 .role-card.teacher {
   border-color: rgba(75, 150, 106, 0.24);
-  background: rgba(75, 150, 106, 0.08);
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .role-icon {
