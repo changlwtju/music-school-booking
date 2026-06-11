@@ -16,6 +16,7 @@ const adminSessionTtlMs = 12 * 60 * 60 * 1000;
 app.use(cors());
 app.use(express.json());
 app.use('/admin', express.static('admin'));
+app.use('/assets', express.static('../miniprogram/assets'));
 
 function ok(res, data) {
   res.json({ data });
