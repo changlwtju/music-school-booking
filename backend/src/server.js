@@ -65,9 +65,52 @@ function enrichRecord(record) {
   };
 }
 
+function syncEvents({ teacherId, studentId, limit = 6 } = {}) {
+  const appointmentEvents = (store.appointments || []).map((appointment) => {
+    const view = appointmentView(appointment);
+    return {
+      id: `sync-${appointment.id}`,
+      type: 'appointment',
+      title: '学生预约已同步',
+      content: `${view.student_name}的${view.course}课程已同步到${view.teacher_name}课表`,
+      teacher_id: appointment.teacher_id,
+      student_id: appointment.student_id,
+      appointment_id: appointment.id,
+      created_at: appointment.created_at || appointment.updated_at || ''
+    };
+  });
+
+  const recordEvents = (store.lessonRecords || []).map((record) => {
+    const view = enrichRecord(record);
+    return {
+      id: `sync-${record.id}`,
+      type: 'record',
+      title: '上课记录已同步',
+      content: `${view.teacher_name}录入的${view.course}学习内容已同步到学生端`,
+      teacher_id: record.teacher_id,
+      student_id: record.student_id,
+      appointment_id: record.appointment_id,
+      created_at: record.created_at || ''
+    };
+  });
+
+  return [...appointmentEvents, ...recordEvents]
+    .filter((item) => (!teacherId || item.teacher_id === teacherId) && (!studentId || item.student_id === studentId))
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(0, Number(limit || 6));
+}
+
 app.get('/health', (_req, res) => ok(res, { status: 'ok' }));
 
 app.get('/courses', (_req, res) => ok(res, store.courses || courseCatalog));
+
+app.get('/sync-events', (req, res) => {
+  ok(res, syncEvents({
+    teacherId: req.query.teacherId,
+    studentId: req.query.studentId,
+    limit: req.query.limit
+  }));
+});
 
 app.post('/auth/demo-login', (req, res) => {
   const role = req.body?.role === 'teacher' ? 'teacher' : 'student';
