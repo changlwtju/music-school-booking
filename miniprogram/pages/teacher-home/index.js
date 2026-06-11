@@ -1,7 +1,7 @@
 import { request } from '../../utils/request';
 
 Page({
-  data: { syncEvents: [] },
+  data: { syncEvents: [], teacher: {} },
   async onLoad() {
     this.load();
   },
@@ -9,7 +9,18 @@ Page({
     this.loadSyncEvents();
   },
   async load() {
+    await this.loadTeacher();
     this.loadSyncEvents();
+  },
+  async loadTeacher() {
+    const app = getApp();
+    const teachers = await request(`/teachers?campusId=${app.globalData.campusId}`) || [];
+    const teacher = teachers.find((item) => item.id === app.globalData.teacherId) || teachers[0] || {};
+    if (teacher.id) {
+      app.globalData.teacherId = teacher.id;
+      app.globalData.campusId = teacher.campus_id;
+    }
+    this.setData({ teacher });
   },
   async loadSyncEvents() {
     const app = getApp();

@@ -6,6 +6,8 @@ const state = {
   students: [],
   teachers: [],
   campuses: [],
+  courses: [],
+  appointments: [],
   slots: []
 };
 
@@ -64,12 +66,38 @@ function teacherStatusLabel(value) {
   }[value] || value || '-';
 }
 
+function appointmentStatusLabel(value) {
+  return {
+    booked: '待上课',
+    completed: '已完成',
+    cancelled: '已取消'
+  }[value] || value || '-';
+}
+
+function addressStatusLabel(value) {
+  return {
+    active: '营业中',
+    planned: '筹备中',
+    inactive: '停用'
+  }[value] || value || '-';
+}
+
 function modeLabel(value) {
   return value === 'book' ? '按册学习' : '固定课时';
 }
 
 function formJson(form) {
   return Object.fromEntries(new FormData(form).entries());
+}
+
+function fileToDataUrl(file) {
+  if (!file || !file.size) return Promise.resolve('');
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('合同附件读取失败'));
+    reader.readAsDataURL(file);
+  });
 }
 
 function renderMetrics(counts = {}) {
@@ -80,7 +108,7 @@ function renderMetrics(counts = {}) {
     ['课程绑定', counts.bindings],
     ['预约', counts.appointments],
     ['上课记录', counts.lesson_records],
-    ['校区', counts.campuses]
+    ['地址', counts.campuses]
   ];
   el('metrics').innerHTML = items.map(([label, value]) => `
     <div class="metric">
@@ -104,6 +132,54 @@ function renderTeacherStats() {
   `).join('');
 }
 
+function renderStudentStats() {
+  const stats = state.dashboard?.studentStats || {};
+  el('studentStats').innerHTML = [
+    ['在读学员', stats.active],
+    ['分期学员', stats.installment],
+    ['30天内到期合同', stats.expiring_contracts_30d]
+  ].map(([label, value]) => `
+    <div class="mini-stat">
+      <div class="mini-value">${value ?? 0}</div>
+      <div class="mini-label">${label}</div>
+    </div>
+  `).join('');
+}
+
+function renderReleaseInfo() {
+  const release = state.dashboard?.release || {};
+  el('releaseInfo').innerHTML = `
+    <div class="release-line"><strong>${release.tomorrow || '-'}</strong><span class="tag">${release.tomorrow_released ? '已释放' : '20:00 自动释放'}</span></div>
+    <div class="muted">${release.note || ''}</div>
+  `;
+}
+
+function renderCourseStats() {
+  const courses = state.dashboard?.courses || [];
+  el('courseStatsBody').innerHTML = courses.map((item) => `
+    <tr>
+      <td>${item.course || '-'}</td>
+      <td>${item.binding_count || 0}</td>
+      <td>${item.student_count || 0}</td>
+      <td>${item.teacher_count || 0}</td>
+    </tr>
+  `).join('');
+}
+
+function renderTodayAppointments() {
+  const appointments = state.dashboard?.todayAppointments || [];
+  el('todayAppointmentsBody').innerHTML = appointments.map((item) => `
+    <tr>
+      <td>${item.start_time || '-'}-${item.end_time || '-'}</td>
+      <td>${item.student_name || '-'}</td>
+      <td>${item.teacher_name || '-'}</td>
+      <td>${item.course || '-'}</td>
+      <td>${item.created_by === 'admin' ? '后台创建' : '学生端预约'}</td>
+      <td><span class="tag">${appointmentStatusLabel(item.status)}</span></td>
+    </tr>
+  `).join('');
+}
+
 function renderAppointments() {
   const appointments = state.dashboard?.upcomingAppointments || [];
   el('appointmentsBody').innerHTML = appointments.map((item) => `
@@ -114,6 +190,22 @@ function renderAppointments() {
       <td>${item.teacher_name || '-'}</td>
       <td>${item.course || '-'}</td>
       <td>${item.campus_name || '-'}</td>
+      <td><span class="tag">已同步老师端</span></td>
+    </tr>
+  `).join('');
+}
+
+function renderAppointmentSync() {
+  el('appointmentSyncBody').innerHTML = state.appointments.map((item) => `
+    <tr>
+      <td>${item.date || '-'}</td>
+      <td>${item.start_time || '-'}-${item.end_time || '-'}</td>
+      <td>${item.student_name || '-'}</td>
+      <td>${item.teacher_name || '-'}</td>
+      <td>${item.course || '-'}</td>
+      <td>${item.sync_source || '-'}</td>
+      <td><span class="tag">${item.synced_to_teacher ? '已同步' : '未绑定'}</span></td>
+      <td><span class="tag">${appointmentStatusLabel(item.status)}</span></td>
     </tr>
   `).join('');
 }
@@ -156,6 +248,8 @@ function renderCampuses() {
       <td>${campus.address || '-'}</td>
       <td>${campus.phone || '-'}</td>
       <td>${campus.hours || '-'}</td>
+      <td><span class="tag">${addressStatusLabel(campus.status || 'active')}</span></td>
+      <td>${campus.latitude && campus.longitude ? `${campus.latitude}, ${campus.longitude}` : (campus.map_keyword || '-')}</td>
     </tr>
   `).join('');
 }
@@ -166,21 +260,33 @@ function renderSelects() {
     ...state.teachers.map((teacher) => `<option value="${teacher.id}">${teacher.name}</option>`)
   ].join('');
   el('studentTeacher').innerHTML = teacherOptions;
+  el('appointmentTeacher').innerHTML = teacherOptions;
   document.querySelectorAll('.teacher-select').forEach((select) => {
     select.innerHTML = state.teachers.map((teacher) => `<option value="${teacher.id}">${teacher.name} · ${teacher.primary_course || ''}</option>`).join('');
   });
   document.querySelectorAll('.campus-select').forEach((select) => {
     select.innerHTML = state.campuses.map((campus) => `<option value="${campus.id}">${campus.name}</option>`).join('');
   });
+  document.querySelectorAll('.course-select').forEach((select) => {
+    select.innerHTML = state.courses.map((course) => `<option value="${course.name}">${course.name}</option>`).join('');
+  });
+  el('teacherCourseCheckboxes').innerHTML = state.courses.map((course) => `
+    <label class="slot-option">
+      <input type="checkbox" name="courses" value="${course.name}" />
+      ${course.name}
+    </label>
+  `).join('');
 }
 
 function renderSlots() {
-  el('slotCheckboxes').innerHTML = state.slots.map((slot) => `
+  const html = state.slots.map((slot) => `
     <label class="slot-option">
       <input type="checkbox" name="startTimes" value="${slot.startTime}" />
       ${slot.startTime}-${slot.endTime}
     </label>
   `).join('');
+  el('fixedSlotCheckboxes').innerHTML = html;
+  el('lockSlotCheckboxes').innerHTML = html;
 }
 
 function setView(view) {
@@ -190,12 +296,12 @@ function setView(view) {
   });
   document.querySelectorAll('.view').forEach((node) => node.classList.add('hidden'));
   el(`${view}View`).classList.remove('hidden');
-  el('pageTitle').textContent = { dashboard: '总览', students: '学员', teachers: '老师', campuses: '校区', schedule: '课表' }[view];
+  el('pageTitle').textContent = { dashboard: '总览', students: '学员', teachers: '老师', campuses: '地址管理', schedule: '课表' }[view];
   el('pageSubtitle').textContent = {
     dashboard: '服务器运行数据',
     students: '按老师、状态和关键词筛选',
     teachers: '老师资料和授课乐器',
-    campuses: '门店地址和导航资料',
+    campuses: '门店地址、导航资料和后续新店预留',
     schedule: '固定课节与临时不可约时段'
   }[view];
 }
@@ -203,8 +309,17 @@ function setView(view) {
 async function loadDashboard() {
   state.dashboard = await api('/admin/api/dashboard');
   renderMetrics(state.dashboard.counts);
+  renderStudentStats();
+  renderReleaseInfo();
+  renderCourseStats();
+  renderTodayAppointments();
   renderTeacherStats();
   renderAppointments();
+}
+
+async function loadCourses() {
+  state.courses = await api('/courses');
+  renderSelects();
 }
 
 async function loadTeachers() {
@@ -224,6 +339,16 @@ async function loadSlots() {
   renderSlots();
 }
 
+async function loadAppointments() {
+  const params = new URLSearchParams({
+    date: el('appointmentDate').value,
+    teacherId: el('appointmentTeacher').value,
+    status: el('appointmentStatus').value
+  });
+  state.appointments = await api(`/admin/api/appointments?${params.toString()}`);
+  renderAppointmentSync();
+}
+
 async function loadStudents() {
   const params = new URLSearchParams({
     keyword: el('studentKeyword').value.trim(),
@@ -235,11 +360,13 @@ async function loadStudents() {
 }
 
 async function loadAll() {
+  await loadCourses();
   await loadCampuses();
   await loadTeachers();
   await loadSlots();
   await loadDashboard();
   await loadStudents();
+  await loadAppointments();
 }
 
 el('loginForm').addEventListener('submit', async (event) => {
@@ -275,12 +402,22 @@ el('refreshBtn').addEventListener('click', loadAll);
 el('studentKeyword').addEventListener('input', () => loadStudents());
 el('studentTeacher').addEventListener('change', loadStudents);
 el('studentStatus').addEventListener('change', loadStudents);
+el('appointmentDate').addEventListener('change', loadAppointments);
+el('appointmentTeacher').addEventListener('change', loadAppointments);
+el('appointmentStatus').addEventListener('change', loadAppointments);
 
 el('studentForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   const message = el('studentFormMessage');
   try {
-    await api('/admin/api/students', { method: 'POST', body: JSON.stringify(formJson(event.currentTarget)) });
+    const data = formJson(event.currentTarget);
+    const file = event.currentTarget.elements.attachmentFile.files[0];
+    delete data.attachmentFile;
+    if (file) {
+      data.attachmentName = file.name;
+      data.attachmentData = await fileToDataUrl(file);
+    }
+    await api('/admin/api/students', { method: 'POST', body: JSON.stringify(data) });
     message.textContent = '学员已保存，并已绑定老师与课程';
     event.currentTarget.reset();
     await loadAll();
@@ -293,10 +430,30 @@ el('teacherForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   const message = el('teacherFormMessage');
   try {
-    await api('/admin/api/teachers', { method: 'POST', body: JSON.stringify(formJson(event.currentTarget)) });
+    const form = event.currentTarget;
+    const data = formJson(form);
+    data.courses = [...form.querySelectorAll('input[name="courses"]:checked')].map((input) => input.value).join('、') || data.primaryCourse;
+    await api('/admin/api/teachers', { method: 'POST', body: JSON.stringify(data) });
     message.textContent = '老师已保存';
     event.currentTarget.reset();
     await loadAll();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+el('fixedScheduleForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = formJson(form);
+  data.weekdays = [...form.querySelectorAll('input[name="weekdays"]:checked')].map((input) => input.value);
+  data.startTimes = [...form.querySelectorAll('input[name="startTimes"]:checked')].map((input) => input.value);
+  const message = el('fixedScheduleMessage');
+  try {
+    const result = await api('/admin/api/fixed-schedule-import', { method: 'POST', body: JSON.stringify(data) });
+    message.textContent = `已导入 ${result.count} 天固定课表`;
+    await loadDashboard();
+    await loadAppointments();
   } catch (error) {
     message.textContent = error.message;
   }
@@ -307,7 +464,7 @@ el('campusForm').addEventListener('submit', async (event) => {
   const message = el('campusFormMessage');
   try {
     await api('/admin/api/campuses', { method: 'POST', body: JSON.stringify(formJson(event.currentTarget)) });
-    message.textContent = '校区已保存';
+    message.textContent = '地址已保存';
     event.currentTarget.reset();
     await loadAll();
   } catch (error) {
@@ -325,6 +482,7 @@ el('lockForm').addEventListener('submit', async (event) => {
     await api('/admin/api/lock-slots', { method: 'POST', body: JSON.stringify(data) });
     message.textContent = '已锁定所选时段，学生端将不可预约';
     await loadDashboard();
+    await loadAppointments();
   } catch (error) {
     message.textContent = error.message;
   }

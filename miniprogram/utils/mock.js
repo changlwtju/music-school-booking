@@ -32,155 +32,149 @@ const isReleased = (date) => {
 const courseCatalog = [
   { id: 'course-piano', name: '钢琴', desc: '启蒙、考级与作品练习' },
   { id: 'course-guitar', name: '吉他', desc: '弹唱、和弦与节奏训练' },
+  { id: 'course-electric-guitar', name: '电吉他', desc: '音色、riff 与节奏训练' },
   { id: 'course-drum', name: '架子鼓', desc: '节拍、律动与乐队配合' }
 ];
 
 const campuses = [
   {
-    id: 'campus-main',
+    id: 'campus-2d2207a805',
     name: '菠菜现代音乐一店（净月御翠园）',
+    short_name: '一店',
     address: '长春市净月区御翠园小区别墅区',
     phone: '请联系校区老师',
     hours: '周二至周日 12:00-20:00',
-    latitude: 43.7908,
-    longitude: 125.4285,
-    desc: '教学地点位于御翠园小区别墅区内，学习环境优越。'
-  },
-  {
-    id: 'campus-east',
-    name: '菠菜现代音乐二店（高新融创上城二期）',
-    address: '长春市高新区融创上城二期小区别墅区',
-    phone: '请联系校区老师',
-    hours: '周二至周日 12:00-20:00',
-    latitude: 43.8325,
-    longitude: 125.2608,
-    desc: '教学地点位于融创上城二期小区别墅区内，学习环境优越。'
+    latitude: null,
+    longitude: null,
+    status: 'active',
+    display_order: 1,
+    map_keyword: '长春市净月区御翠园小区别墅区',
+    desc: '原表校区名称：一店御翠园店；二店资料待补充'
   }
 ];
 
 const students = [
   {
-    id: 'student-chen',
-    name: '陈小雨',
-    phone: '13800000001',
-    campus_id: 'campus-main',
-    enrolled_at: formatDate(-22),
-    expires_at: formatDate(343),
-    payment_status: 'installment',
+    id: 'student-a4e31feaf1',
+    name: '唐鹏',
+    phone: '18004498449',
+    campus_id: 'campus-2d2207a805',
+    enrolled_at: '2026-03-22',
+    expires_at: '2027-03-22',
+    payment_status: 'pending',
     status: 'active',
-    notes: '节奏感很好，近期重点练习稳定拍。'
+    notes: '报名有效期一年；按册学习；完成课程记录后计入当节有效课时。'
   },
   {
-    id: 'student-wang',
-    name: '王一诺',
-    phone: '13800000004',
-    campus_id: 'campus-main',
-    enrolled_at: formatDate(-68),
-    expires_at: formatDate(297),
-    payment_status: 'paid',
+    id: 'student-acd652d146',
+    name: '刘相麟',
+    phone: '13844981087',
+    campus_id: 'campus-2d2207a805',
+    enrolled_at: '2026-05-20',
+    expires_at: '2027-05-20',
+    payment_status: 'pending',
     status: 'active',
-    notes: '和弦转换速度提升明显。'
+    notes: '同时绑定钢琴与吉他课程。'
   },
   {
-    id: 'student-li',
-    name: '李可',
-    phone: '13800000005',
-    campus_id: 'campus-main',
-    enrolled_at: formatDate(-390),
-    expires_at: formatDate(-18),
-    payment_status: 'paid',
-    status: 'expired',
-    notes: '课程已到期，待续费。'
+    id: 'student-19ae2b74d3',
+    name: '薛冬瑞',
+    phone: '15844238171',
+    campus_id: 'campus-2d2207a805',
+    enrolled_at: '2026-05-29',
+    expires_at: '2027-05-29',
+    payment_status: 'pending',
+    status: 'active',
+    notes: '电吉他课程。'
   }
 ];
 
 const teachers = [
-  { id: 'teacher-lin', name: '林老师', phone: '13800000002', campus_id: 'campus-main', primary_course: '架子鼓' },
-  { id: 'teacher-qiao', name: '乔老师', phone: '13800000003', campus_id: 'campus-main', primary_course: '吉他' },
-  { id: 'teacher-sun', name: '孙老师', phone: '13800000006', campus_id: 'campus-main', primary_course: '钢琴' }
+  { id: 'teacher-695b7e061b', name: '刘芗齐', phone: '', campus_id: 'campus-2d2207a805', primary_course: '钢琴', courses: ['钢琴'], status: 'active' },
+  { id: 'teacher-c823a14da0', name: '闻俊浩', phone: '', campus_id: 'campus-2d2207a805', primary_course: '吉他', courses: ['吉他', '电吉他'], status: 'active' }
 ];
 
 const contracts = [
   {
-    id: 'contract-drum',
-    contract_no: `SPM-${formatDate(-22).replace(/-/g, '')}-001`,
-    student_id: 'student-chen',
-    campus_id: 'campus-main',
-    course: '架子鼓',
-    mode: 'fixed20',
-    total_lessons: 20,
-    completed_lessons: 4,
-    valid_lessons: 4,
-    invalid_lessons: 0,
-    progress: '四分音符与八分音符稳定练习',
-    signed_at: formatDate(-22),
-    expires_at: formatDate(343),
-    status: 'active'
-  },
-  {
-    id: 'contract-guitar',
-    contract_no: `SPM-${formatDate(-22).replace(/-/g, '')}-002`,
-    student_id: 'student-chen',
-    campus_id: 'campus-main',
-    course: '吉他',
-    mode: 'book',
-    book_level: '第一册',
-    total_lessons: null,
-    completed_lessons: 6,
-    valid_lessons: 6,
-    invalid_lessons: 0,
-    progress: 'C/G/Am/F 和弦转换',
-    signed_at: formatDate(-22),
-    expires_at: formatDate(343),
-    status: 'active'
-  },
-  {
-    id: 'contract-wang-guitar',
-    contract_no: `SPM-${formatDate(-68).replace(/-/g, '')}-003`,
-    student_id: 'student-wang',
-    campus_id: 'campus-main',
-    course: '吉他',
-    mode: 'fixed20',
-    total_lessons: 20,
-    completed_lessons: 11,
-    valid_lessons: 11,
-    invalid_lessons: 0,
-    progress: '扫弦节奏型与歌曲段落衔接',
-    signed_at: formatDate(-68),
-    expires_at: formatDate(297),
-    status: 'active'
-  },
-  {
-    id: 'contract-li-piano',
-    contract_no: `SPM-${formatDate(-390).replace(/-/g, '')}-004`,
-    student_id: 'student-li',
-    campus_id: 'campus-main',
+    id: 'contract-80ea18d164',
+    contract_no: 'IMP-80EA18D164',
+    student_id: 'student-a4e31feaf1',
+    campus_id: 'campus-2d2207a805',
     course: '钢琴',
     mode: 'book',
-    book_level: '第二册',
+    book_level: '',
     total_lessons: null,
-    completed_lessons: 12,
-    valid_lessons: 11,
-    invalid_lessons: 1,
-    progress: '双手五指练习与基础识谱',
-    signed_at: formatDate(-390),
-    expires_at: formatDate(-18),
-    status: 'expired'
+    completed_lessons: 0,
+    valid_lessons: 0,
+    invalid_lessons: 0,
+    progress: '',
+    signed_at: '2026-03-22',
+    expires_at: '2027-03-22',
+    status: 'active'
+  },
+  {
+    id: 'contract-60a9c338f3',
+    contract_no: 'IMP-60A9C338F3',
+    student_id: 'student-acd652d146',
+    campus_id: 'campus-2d2207a805',
+    course: '钢琴',
+    mode: 'book',
+    book_level: '',
+    total_lessons: null,
+    completed_lessons: 0,
+    valid_lessons: 0,
+    invalid_lessons: 0,
+    progress: '',
+    signed_at: '2026-05-20',
+    expires_at: '2027-05-20',
+    status: 'active'
+  },
+  {
+    id: 'contract-bfebc23769',
+    contract_no: 'IMP-BFEBC23769',
+    student_id: 'student-acd652d146',
+    campus_id: 'campus-2d2207a805',
+    course: '吉他',
+    mode: 'book',
+    book_level: '',
+    total_lessons: null,
+    completed_lessons: 0,
+    valid_lessons: 0,
+    invalid_lessons: 0,
+    progress: '',
+    signed_at: '2026-05-20',
+    expires_at: '2027-05-20',
+    status: 'active'
+  },
+  {
+    id: 'contract-9dbc6ae688',
+    contract_no: 'IMP-9DBC6AE688',
+    student_id: 'student-19ae2b74d3',
+    campus_id: 'campus-2d2207a805',
+    course: '电吉他',
+    mode: 'book',
+    book_level: '',
+    total_lessons: null,
+    completed_lessons: 0,
+    valid_lessons: 0,
+    invalid_lessons: 0,
+    progress: '',
+    signed_at: '2026-05-29',
+    expires_at: '2027-05-29',
+    status: 'active'
   }
 ];
 
 const bindings = [
-  { id: 'binding-drum', student_id: 'student-chen', teacher_id: 'teacher-lin', campus_id: 'campus-main', contract_id: 'contract-drum', course: '架子鼓', status: 'active' },
-  { id: 'binding-guitar', student_id: 'student-chen', teacher_id: 'teacher-qiao', campus_id: 'campus-main', contract_id: 'contract-guitar', course: '吉他', status: 'active' },
-  { id: 'binding-wang-guitar', student_id: 'student-wang', teacher_id: 'teacher-qiao', campus_id: 'campus-main', contract_id: 'contract-wang-guitar', course: '吉他', status: 'active' },
-  { id: 'binding-li-piano', student_id: 'student-li', teacher_id: 'teacher-sun', campus_id: 'campus-main', contract_id: 'contract-li-piano', course: '钢琴', status: 'expired' }
+  { id: 'binding-80ea18d164', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', status: 'active' },
+  { id: 'binding-60a9c338f3', student_id: 'student-acd652d146', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-60a9c338f3', course: '钢琴', status: 'active' },
+  { id: 'binding-bfebc23769', student_id: 'student-acd652d146', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-bfebc23769', course: '吉他', status: 'active' },
+  { id: 'binding-9dbc6ae688', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', status: 'active' }
 ];
 
 const appointments = [
-  { id: 'appt-drum-1', student_id: 'student-chen', teacher_id: 'teacher-lin', campus_id: 'campus-main', contract_id: 'contract-drum', course: '架子鼓', date: formatDate(1), start_time: '15:00', end_time: '15:45', status: 'booked' },
-  { id: 'appt-drum-2', student_id: 'student-chen', teacher_id: 'teacher-lin', campus_id: 'campus-main', contract_id: 'contract-drum', course: '架子鼓', date: formatDate(2), start_time: '16:30', end_time: '17:15', status: 'booked' },
-  { id: 'appt-guitar-1', student_id: 'student-wang', teacher_id: 'teacher-qiao', campus_id: 'campus-main', contract_id: 'contract-wang-guitar', course: '吉他', date: formatDate(1), start_time: '18:30', end_time: '19:15', status: 'booked' },
-  { id: 'appt-piano-1', student_id: 'student-li', teacher_id: 'teacher-sun', campus_id: 'campus-main', contract_id: 'contract-li-piano', course: '钢琴', date: formatDate(0), start_time: '17:45', end_time: '18:30', status: 'booked' }
+  { id: 'appt-today-piano-tang', student_id: 'student-a4e31feaf1', teacher_id: 'teacher-695b7e061b', campus_id: 'campus-2d2207a805', contract_id: 'contract-80ea18d164', course: '钢琴', date: formatDate(0), start_time: '15:00', end_time: '15:45', status: 'booked' },
+  { id: 'appt-today-guitar-xue', student_id: 'student-19ae2b74d3', teacher_id: 'teacher-c823a14da0', campus_id: 'campus-2d2207a805', contract_id: 'contract-9dbc6ae688', course: '电吉他', date: formatDate(0), start_time: '18:30', end_time: '19:15', status: 'booked' }
 ];
 
 const syncEvents = [
@@ -188,69 +182,49 @@ const syncEvents = [
     id: 'sync-initial-1',
     type: 'appointment',
     title: '学生预约已同步',
-    content: '陈小雨的架子鼓课程已同步到林老师课表',
-    teacher_id: 'teacher-lin',
-    student_id: 'student-chen',
-    appointment_id: 'appt-drum-1',
+    content: '唐鹏的钢琴课程已同步到刘芗齐课表',
+    teacher_id: 'teacher-695b7e061b',
+    student_id: 'student-a4e31feaf1',
+    appointment_id: 'appt-today-piano-tang',
     created_at: new Date(Date.now() - 18 * 60 * 1000).toISOString()
   },
   {
     id: 'sync-initial-2',
     type: 'record',
     title: '上课记录已同步',
-    content: '林老师录入的架子鼓学习内容已同步到学生端',
-    teacher_id: 'teacher-lin',
-    student_id: 'student-chen',
-    appointment_id: 'recorded-drum',
+    content: '刘芗齐录入的钢琴学习内容已同步到学生端',
+    teacher_id: 'teacher-695b7e061b',
+    student_id: 'student-a4e31feaf1',
+    appointment_id: 'recorded-piano',
     created_at: new Date(Date.now() - 42 * 60 * 1000).toISOString()
   }
 ];
 
 const records = [
   {
-    id: 'record-drum',
-    appointment_id: 'recorded-drum',
-    student_id: 'student-chen',
-    teacher_id: 'teacher-lin',
-    campus_id: 'campus-main',
-    contract_id: 'contract-drum',
-    course: '架子鼓',
+    id: 'record-piano',
+    appointment_id: 'recorded-piano',
+    student_id: 'student-a4e31feaf1',
+    teacher_id: 'teacher-695b7e061b',
+    campus_id: 'campus-2d2207a805',
+    contract_id: 'contract-80ea18d164',
+    course: '钢琴',
     date: formatDate(-2),
     start_time: '15:00',
     end_time: '15:45',
     status: 'completed',
     billable: 1,
     difficulty: '适中',
-    progress: '八分音符稳定到 82 BPM',
-    homework: '每天 10 分钟节拍器练习',
-    content: '复习四分音符，加入八分音符与底鼓踩镲配合。',
-    notes: '注意手腕放松。'
-  },
-  {
-    id: 'record-guitar',
-    appointment_id: 'recorded-guitar',
-    student_id: 'student-chen',
-    teacher_id: 'teacher-qiao',
-    campus_id: 'campus-main',
-    contract_id: 'contract-guitar',
-    course: '吉他',
-    date: formatDate(-5),
-    start_time: '18:30',
-    end_time: '19:15',
-    status: 'completed',
-    billable: 1,
-    difficulty: '偏难',
-    progress: 'G 和弦到 Am 和弦转换',
-    homework: '慢速循环 20 组和弦转换',
-    content: '复习 C/G/Am/F，加入右手分解节奏。',
+    progress: '基础指法与识谱入门',
+    homework: '每天 10 分钟右手触键练习',
+    content: '复习坐姿、手型和基础节奏，加入简单识谱。',
     notes: ''
   }
 ];
 
 const schedulePresets = {
-  'teacher-lin': {},
-  'teacher-qiao': {},
-  'teacher-sun': {}
+  'teacher-695b7e061b': {},
+  'teacher-c823a14da0': {}
 };
 
 const slotStarts = ['12:00', '12:45', '13:30', '14:15', '15:00', '15:45', '16:30', '17:45', '18:30', '19:15'];
@@ -389,6 +363,20 @@ export function mockRequest(path, options = {}) {
   const [pathname] = path.split('?');
   const query = parseQuery(path);
 
+  if (pathname === '/auth/demo-login' && options.method === 'POST') {
+    const role = options.data?.role === 'teacher' ? 'teacher' : 'student';
+    if (role === 'teacher') {
+      return Promise.resolve({
+        user: { id: 'user-teacher-695b7e061b', role: 'teacher', name: '刘芗齐', status: 'active' },
+        profile: teachers[0]
+      });
+    }
+    return Promise.resolve({
+      user: { id: 'user-student-a4e31feaf1', role: 'student', name: '唐鹏', status: 'active' },
+      profile: students[0]
+    });
+  }
+
   if (pathname === '/payment-code') {
     return Promise.resolve({
       title: '菠菜现代音乐',
@@ -416,12 +404,12 @@ export function mockRequest(path, options = {}) {
   }
 
   if (pathname.includes('/summary')) {
-    const studentId = pathname.split('/')[2] || 'student-chen';
+    const studentId = pathname.split('/')[2] || 'student-a4e31feaf1';
     return Promise.resolve(studentSummary(studentId));
   }
 
   if (pathname.includes('/bookable-courses')) {
-    const studentId = pathname.split('/')[2] || 'student-chen';
+    const studentId = pathname.split('/')[2] || 'student-a4e31feaf1';
     return Promise.resolve(
       bindings
         .filter((item) => item.student_id === studentId && item.status === 'active')
@@ -444,7 +432,7 @@ export function mockRequest(path, options = {}) {
   }
 
   if (pathname.startsWith('/schedule/slots')) {
-    const teacherId = query.teacherId || 'teacher-lin';
+    const teacherId = query.teacherId || 'teacher-695b7e061b';
     const date = query.date || formatDate(1);
     return Promise.resolve({
       rules: {
@@ -496,7 +484,7 @@ export function mockRequest(path, options = {}) {
   }
 
   if (pathname.startsWith('/teachers') && pathname.endsWith('/schedule')) {
-    const teacherId = pathname.split('/')[2] || 'teacher-lin';
+    const teacherId = pathname.split('/')[2] || 'teacher-695b7e061b';
     const date = query.date || formatDate(1);
     return Promise.resolve({
       date,
@@ -509,7 +497,7 @@ export function mockRequest(path, options = {}) {
   }
 
   if (pathname.startsWith('/teachers') && pathname.endsWith('/students')) {
-    const teacherId = pathname.split('/')[2] || 'teacher-lin';
+    const teacherId = pathname.split('/')[2] || 'teacher-695b7e061b';
     return Promise.resolve(teacherStudents({ teacherId, keyword: query.keyword || '', filter: query.filter || 'active' }));
   }
 

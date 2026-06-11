@@ -1,4 +1,7 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import dayjs from 'dayjs';
 import express from 'express';
@@ -8,15 +11,18 @@ import { buildSlots, canSelfChange, DEFAULT_SLOTS, isMonday, isReleased, remaini
 import { appointmentView, availabilityForDate, campusName, contractById, courseCatalog, saveStore, store, teacherName } from './store.js';
 
 const app = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadRoot = path.resolve(__dirname, '..', 'uploads');
 const adminSessions = new Map();
 const adminUsername = process.env.ADMIN_USERNAME || 'admin';
 const adminPassword = process.env.ADMIN_PASSWORD || 'spinach2026';
 const adminSessionTtlMs = 12 * 60 * 60 * 1000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '12mb' }));
 app.use('/admin', express.static('admin'));
 app.use('/assets', express.static('../miniprogram/assets'));
+app.use('/uploads', express.static(uploadRoot));
 
 function ok(res, data) {
   res.json({ data });
@@ -81,7 +87,28 @@ function normalizePaymentStatus(value) {
   if (['paid', '已付清', '已缴费'].includes(value)) return 'paid';
   if (['installment', '分期'].includes(value)) return 'installment';
   if (['trial', '体验课'].includes(value)) return 'trial';
+  if (['pending', '待确认', '待缴费'].includes(value)) return 'pending';
   return value || 'pending';
+}
+
+function saveBase64File({ folder, fileName, data }) {
+  if (!data) return '';
+  const match = String(data).match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return '';
+  const mime = match[1];
+  const extByMime = {
+    'application/pdf': '.pdf',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp'
+  };
+  const rawExt = path.extname(String(fileName || '')).toLowerCase();
+  const ext = rawExt || extByMime[mime] || '.bin';
+  const safeName = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${ext}`;
+  const dir = path.join(uploadRoot, folder);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, safeName), Buffer.from(match[2], 'base64'));
+  return `/uploads/${folder}/${safeName}`;
 }
 
 function normalizeTeacherStatus(value) {
@@ -241,6 +268,8 @@ app.post('/admin/api/logout', requireAdmin, (req, res) => {
 });
 
 app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
+  const today = dayjs().format('YYYY-MM-DD');
+  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
   const teacherStats = (store.teachers || []).map((teacher) => {
     const rows = adminStudentRows({ teacherId: teacher.id });
     const appointments = (store.appointments || []).filter((item) => item.teacher_id === teacher.id && item.status === 'booked');
@@ -254,11 +283,28 @@ app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
       booked_count: appointments.length
     };
   });
+  const courseStats = (store.bindings || []).reduce((acc, binding) => {
+    const course = binding.course || contractById(binding.contract_id)?.course || '未填写';
+    const item = acc.get(course) || { course, bindings: 0, students: new Set(), teachers: new Set() };
+    item.bindings += 1;
+    item.students.add(binding.student_id);
+    item.teachers.add(binding.teacher_id);
+    acc.set(course, item);
+    return acc;
+  }, new Map());
   const upcomingAppointments = (store.appointments || [])
     .filter((item) => item.status === 'booked')
     .map(appointmentView)
     .sort((a, b) => `${a.date} ${a.start_time}`.localeCompare(`${b.date} ${b.start_time}`))
     .slice(0, 8);
+  const todayAppointments = (store.appointments || [])
+    .filter((item) => item.date === today)
+    .map(appointmentView)
+    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  const recentSync = syncEvents({ limit: 8 });
+  const activeStudents = (store.students || []).filter((item) => item.status === 'active').length;
+  const installmentStudents = (store.students || []).filter((item) => item.payment_status === 'installment').length;
+  const expiringContracts = (store.contracts || []).filter((item) => item.expires_at && item.expires_at >= today && item.expires_at <= dayjs().add(30, 'day').format('YYYY-MM-DD')).length;
   ok(res, {
     counts: {
       campuses: (store.campuses || []).length,
@@ -269,8 +315,28 @@ app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
       appointments: (store.appointments || []).length,
       lesson_records: (store.lessonRecords || []).length
     },
+    studentStats: {
+      active: activeStudents,
+      installment: installmentStudents,
+      expiring_contracts_30d: expiringContracts
+    },
+    release: {
+      today,
+      tomorrow,
+      release_time: '20:00',
+      tomorrow_released: isReleased(tomorrow),
+      note: '学生端请求可约时段时实时判断：每天 20:00 自动开放次日课表，无需人工点击。'
+    },
     teachers: teacherStats,
+    courses: [...courseStats.values()].map((item) => ({
+      course: item.course,
+      binding_count: item.bindings,
+      student_count: item.students.size,
+      teacher_count: item.teachers.size
+    })),
     campuses: store.campuses || [],
+    todayAppointments,
+    recentSync,
     upcomingAppointments
   });
 });
@@ -332,7 +398,10 @@ app.post('/admin/api/teachers', requireAdmin, (req, res) => {
 });
 
 app.get('/admin/api/campuses', requireAdmin, (_req, res) => {
-  ok(res, store.campuses || []);
+  ok(res, [...(store.campuses || [])].sort((a, b) => {
+    const order = Number(a.display_order ?? 999) - Number(b.display_order ?? 999);
+    return order || String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hans-CN');
+  }));
 });
 
 app.post('/admin/api/campuses', requireAdmin, (req, res) => {
@@ -344,10 +413,15 @@ app.post('/admin/api/campuses', requireAdmin, (req, res) => {
     hours: z.string().optional(),
     latitude: z.union([z.number(), z.string()]).optional(),
     longitude: z.union([z.number(), z.string()]).optional(),
-    desc: z.string().optional()
+    desc: z.string().optional(),
+    status: z.string().optional(),
+    displayOrder: z.union([z.number(), z.string()]).optional(),
+    contactPerson: z.string().optional(),
+    mapKeyword: z.string().optional()
   }).safeParse(req.body);
   if (!parsed.success) return fail(res, 400, '校区信息不完整');
   const shortName = parsed.data.shortName || parsed.data.name;
+  const status = ['active', 'inactive', 'planned'].includes(parsed.data.status) ? parsed.data.status : 'active';
   const campus = {
     id: stableId('campus', shortName, parsed.data.name),
     name: parsed.data.name,
@@ -359,7 +433,11 @@ app.post('/admin/api/campuses', requireAdmin, (req, res) => {
     hours: parsed.data.hours || '周二至周日 12:00-20:00',
     image: '/assets/brand/brand-display.png',
     release_time: '20:00',
-    desc: parsed.data.desc || ''
+    desc: parsed.data.desc || '',
+    status,
+    display_order: parsed.data.displayOrder === '' || parsed.data.displayOrder === undefined ? (store.campuses || []).length + 1 : Number(parsed.data.displayOrder),
+    contact_person: parsed.data.contactPerson || '',
+    map_keyword: parsed.data.mapKeyword || parsed.data.address
   };
   upsertById(store.campuses, campus);
   saveStore(store);
@@ -383,7 +461,11 @@ app.post('/admin/api/students', requireAdmin, (req, res) => {
     status: z.string().optional(),
     progress: z.string().optional(),
     notes: z.string().optional(),
-    attachmentUrl: z.string().optional()
+    attachmentUrl: z.string().optional(),
+    attachmentName: z.string().optional(),
+    attachmentData: z.string().optional(),
+    guardianName: z.string().optional(),
+    birthday: z.string().optional()
   }).safeParse(req.body);
   if (!parsed.success) return fail(res, 400, '学员信息不完整');
   const { name, phone = '', campusId, teacherId, course } = parsed.data;
@@ -400,6 +482,11 @@ app.post('/admin/api/students', requireAdmin, (req, res) => {
   const totalLessons = parsed.data.mode === 'book' ? null : Number(parsed.data.totalLessons || 20);
   const studentStatus = normalizeStudentStatus(parsed.data.status);
   const nowDate = dayjs().format('YYYY-MM-DD');
+  const uploadedAttachmentUrl = saveBase64File({
+    folder: 'contracts',
+    fileName: parsed.data.attachmentName,
+    data: parsed.data.attachmentData
+  });
 
   upsertById(store.users, {
     id: userId,
@@ -420,6 +507,8 @@ app.post('/admin/api/students', requireAdmin, (req, res) => {
     expires_at: parsed.data.expiresAt || '',
     payment_status: normalizePaymentStatus(parsed.data.paymentStatus),
     status: studentStatus,
+    guardian_name: parsed.data.guardianName || '',
+    birthday: parsed.data.birthday || '',
     notes: parsed.data.notes || ''
   });
   upsertById(store.contracts, {
@@ -438,7 +527,7 @@ app.post('/admin/api/students', requireAdmin, (req, res) => {
     signed_at: parsed.data.enrolledAt || nowDate,
     expires_at: parsed.data.expiresAt || '',
     status: studentStatus,
-    attachment_url: parsed.data.attachmentUrl || ''
+    attachment_url: uploadedAttachmentUrl || parsed.data.attachmentUrl || ''
   });
   upsertById(store.bindings, {
     id: bindingId,
@@ -454,8 +543,65 @@ app.post('/admin/api/students', requireAdmin, (req, res) => {
   ok(res, adminStudentRows({}).find((item) => item.binding_id === bindingId));
 });
 
+app.get('/admin/api/appointments', requireAdmin, (req, res) => {
+  const { date = '', teacherId = '', status = '' } = req.query;
+  const data = (store.appointments || [])
+    .filter((item) => !date || item.date === date)
+    .filter((item) => !teacherId || item.teacher_id === teacherId)
+    .filter((item) => !status || item.status === status)
+    .map((item) => ({
+      ...appointmentView(item),
+      sync_source: item.created_by === 'admin' ? '后台创建' : '学生端预约',
+      synced_to_teacher: Boolean(item.teacher_id)
+    }))
+    .sort((a, b) => `${b.date} ${b.start_time}`.localeCompare(`${a.date} ${a.start_time}`));
+  ok(res, data);
+});
+
 app.get('/admin/api/schedule-slots', requireAdmin, (_req, res) => {
   ok(res, DEFAULT_SLOTS.map(([startTime, endTime]) => ({ startTime, endTime })));
+});
+
+app.post('/admin/api/fixed-schedule-import', requireAdmin, (req, res) => {
+  const parsed = z.object({
+    teacherId: z.string().min(1),
+    campusId: z.string().min(1),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    weekdays: z.array(z.union([z.number(), z.string()])).min(1),
+    startTimes: z.array(z.string()).min(1),
+    reason: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '固定课表导入信息不完整');
+  const { teacherId, campusId, startDate, endDate, startTimes } = parsed.data;
+  const teacher = store.teachers.find((item) => item.id === teacherId && item.status === 'active');
+  if (!teacher) return fail(res, 404, '老师不存在或已停用');
+  const campus = store.campuses.find((item) => item.id === campusId);
+  if (!campus) return fail(res, 404, '校区不存在');
+  const start = dayjs(startDate);
+  const end = dayjs(endDate);
+  if (!start.isValid() || !end.isValid() || end.isBefore(start, 'day')) return fail(res, 400, '日期范围无效');
+  if (end.diff(start, 'day') > 180) return fail(res, 400, '单次最多导入 180 天固定课表');
+  const weekdays = new Set(parsed.data.weekdays.map((item) => Number(item)));
+  const selected = new Set(startTimes);
+  const closedReason = parsed.data.reason || '非固定上课时间';
+  const data = [];
+  for (let cursor = start; !cursor.isAfter(end, 'day'); cursor = cursor.add(1, 'day')) {
+    const date = cursor.format('YYYY-MM-DD');
+    const weekday = cursor.day();
+    const slots = DEFAULT_SLOTS.map(([startTime, endTime]) => {
+      const shouldOpen = weekdays.has(weekday) && selected.has(startTime) && weekday !== 1;
+      return {
+        start_time: startTime,
+        end_time: endTime,
+        status: shouldOpen ? 'open' : 'closed',
+        reason: shouldOpen ? '' : (weekday === 1 ? '周一全店休息' : closedReason)
+      };
+    });
+    data.push(upsertTeacherAvailability({ teacherId, campusId, date, slots }));
+  }
+  saveStore(store);
+  ok(res, { count: data.length, data });
 });
 
 app.post('/admin/api/lock-slots', requireAdmin, (req, res) => {
@@ -467,12 +613,26 @@ app.post('/admin/api/lock-slots', requireAdmin, (req, res) => {
     startTimes: z.array(z.string()).min(1)
   }).safeParse(req.body);
   if (!parsed.success) return fail(res, 400, '锁定时段信息不完整');
-  const slots = DEFAULT_SLOTS.map(([startTime, endTime]) => ({
-    start_time: startTime,
-    end_time: endTime,
-    status: parsed.data.startTimes.includes(startTime) ? 'closed' : 'open',
-    reason: parsed.data.startTimes.includes(startTime) ? (parsed.data.reason || '临时不可约') : ''
-  }));
+  const existing = availabilityForDate(parsed.data.teacherId, parsed.data.date);
+  const existingByStart = new Map((existing?.slots || []).map((item) => [item.start_time, item]));
+  const locked = new Set(parsed.data.startTimes);
+  const slots = DEFAULT_SLOTS.map(([startTime, endTime]) => {
+    const current = existingByStart.get(startTime);
+    if (locked.has(startTime)) {
+      return {
+        start_time: startTime,
+        end_time: endTime,
+        status: 'closed',
+        reason: parsed.data.reason || '临时不可约'
+      };
+    }
+    return current || {
+      start_time: startTime,
+      end_time: endTime,
+      status: 'open',
+      reason: ''
+    };
+  });
   const availability = upsertTeacherAvailability({
     teacherId: parsed.data.teacherId,
     campusId: parsed.data.campusId,
@@ -483,7 +643,12 @@ app.post('/admin/api/lock-slots', requireAdmin, (req, res) => {
   ok(res, availability);
 });
 
-app.get('/courses', (_req, res) => ok(res, store.courses || courseCatalog));
+app.get('/courses', (_req, res) => {
+  const byName = new Map();
+  for (const course of courseCatalog) byName.set(course.name, course);
+  for (const course of store.courses || []) byName.set(course.name, { ...byName.get(course.name), ...course });
+  ok(res, [...byName.values()]);
+});
 
 app.get('/payment-code', (_req, res) => {
   ok(res, {
@@ -513,7 +678,7 @@ app.post('/auth/demo-login', (req, res) => {
   ok(res, { user, profile });
 });
 
-app.get('/campuses', (_req, res) => ok(res, store.campuses));
+app.get('/campuses', (_req, res) => ok(res, (store.campuses || []).filter((item) => item.status !== 'inactive')));
 
 app.get('/students/:studentId/summary', (req, res) => {
   const student = store.students.find((item) => item.id === req.params.studentId);
@@ -629,7 +794,7 @@ app.post('/appointments', (req, res) => {
   };
   store.appointments.push(appointment);
   saveStore(store);
-  ok(res, appointment);
+  ok(res, appointmentView(appointment));
 });
 
 app.get('/admin/teacher-availability', (req, res) => {

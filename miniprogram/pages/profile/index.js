@@ -1,7 +1,7 @@
 import { request } from '../../utils/request';
 
 Page({
-  data: { summary: { student: {}, contracts: [] }, paymentText: '' },
+  data: { summary: { student: {}, contracts: [], bindings: [] }, paymentText: '', teacherNames: '' },
   async onShow() {
     const app = getApp();
     const summary = await request(`/students/${app.globalData.studentId}/summary`);
@@ -17,9 +17,16 @@ Page({
       };
     });
     summary.latestRecord = (summary.records || [])[0] || null;
+    const paymentText = {
+      installment: '分期中',
+      paid: '全款已付',
+      pending: '待确认',
+      trial: '体验课'
+    }[summary.student.payment_status] || summary.student.payment_status || '待确认';
     this.setData({
       summary,
-      paymentText: summary.student.payment_status === 'installment' ? '分期中' : '全款已付'
+      paymentText,
+      teacherNames: [...new Set(bindings.map((item) => item.teacher_name).filter(Boolean))].join('、')
     });
   },
   goRecords() { wx.navigateTo({ url: '/pages/records/index' }); }

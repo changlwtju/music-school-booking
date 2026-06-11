@@ -2,8 +2,8 @@
   <view class="topbar">
     <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
     <view>
-      <view class="brand-title">菠菜现代音乐</view>
-      <view class="brand-subtitle">钢琴 · 吉他 · 架子鼓</view>
+      <view class="brand-title">{{summary.student.name || '菠菜现代音乐'}}</view>
+      <view class="brand-subtitle">{{summary.student.campus_name || '钢琴 · 吉他 · 电吉他'}}</view>
     </view>
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />

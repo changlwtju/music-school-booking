@@ -10,7 +10,8 @@
     <view class="row"><text>报名日期</text><text>{{summary.student.enrolled_at}}</text></view>
     <view class="row"><text>学习期限</text><text>{{summary.student.expires_at}}</text></view>
     <view class="row"><text>分期状态</text><text>{{paymentText}}</text></view>
-    <view class="row"><text>用户 ID</text><text>{{summary.student.id}}</text></view>
+    <view class="row"><text>负责老师</text><text>{{teacherNames}}</text></view>
+    <view class="row"><text>校区地址</text><text>{{summary.student.campus_address}}</text></view>
   </view>
   <view class="section-title">当前学习课程</view>
   <block wx:for="{{summary.contracts}}" wx:key="id">

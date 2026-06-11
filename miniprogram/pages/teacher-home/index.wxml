@@ -2,8 +2,8 @@
   <view class="topbar">
     <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
     <view>
-      <view class="brand-title">老师工作台</view>
-      <view class="brand-subtitle">同店课表 · 会员 · 课后记录</view>
+      <view class="brand-title">{{teacher.name || '老师工作台'}}</view>
+      <view class="brand-subtitle">{{teacher.primary_course || '课程'}} · 今日课表 · 会员 · 课后记录</view>
     </view>
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />

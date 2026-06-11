@@ -91,6 +91,7 @@ function normalizePaymentStatus(value) {
   if (['分期', '分期会员', 'installment'].includes(status)) return 'installment';
   if (['体验课', 'trial'].includes(status)) return 'trial';
   if (['已付清', '已缴费', 'paid'].includes(status)) return 'paid';
+  if (['待确认', '待缴费', 'pending'].includes(status)) return 'pending';
   return status || 'pending';
 }
 

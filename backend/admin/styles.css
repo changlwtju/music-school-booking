@@ -271,6 +271,61 @@ nav {
   font-size: 13px;
 }
 
+.info-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.info-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 16px;
+}
+
+.info-panel h3 {
+  margin-top: 0;
+}
+
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.mini-stat {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.mini-value {
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.mini-label {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.release-box {
+  display: grid;
+  gap: 10px;
+}
+
+.release-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .filters {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) 180px 140px;
@@ -426,6 +481,8 @@ tr:last-child td {
   }
 
   .metrics,
+  .info-grid,
+  .mini-stats,
   .filters,
   .admin-form,
   .slot-grid {
