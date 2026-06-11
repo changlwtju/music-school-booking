@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>菠菜现代音乐后台</title>
+  <link rel="stylesheet" href="/admin/styles.css" />
+</head>
+<body>
+  <main id="loginView" class="login-shell">
+    <section class="login-panel">
+      <div class="brand-row">
+        <div class="brand-mark">菠</div>
+        <div>
+          <h1>菠菜现代音乐后台</h1>
+          <p>学员、老师与课程绑定管理</p>
+        </div>
+      </div>
+      <form id="loginForm" class="login-form">
+        <label>
+          <span>账号</span>
+          <input id="username" name="username" autocomplete="username" value="admin" />
+        </label>
+        <label>
+          <span>密码</span>
+          <input id="password" name="password" type="password" autocomplete="current-password" />
+        </label>
+        <button type="submit">登录</button>
+        <p id="loginError" class="error-text"></p>
+      </form>
+    </section>
+  </main>
+
+  <main id="appView" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="sidebar-title">菠菜现代音乐</div>
+      <nav>
+        <button class="nav-item active" data-view="dashboard">总览</button>
+        <button class="nav-item" data-view="students">学员</button>
+        <button class="nav-item" data-view="teachers">老师</button>
+      </nav>
+      <button id="logoutBtn" class="logout-btn">退出登录</button>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <h2 id="pageTitle">总览</h2>
+          <p id="pageSubtitle">服务器运行数据</p>
+        </div>
+        <button id="refreshBtn" class="secondary-btn">刷新</button>
+      </header>
+
+      <section id="dashboardView" class="view">
+        <div id="metrics" class="metrics"></div>
+        <h3>老师数据</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>老师</th>
+                <th>主授课程</th>
+                <th>学员数</th>
+                <th>课程绑定</th>
+                <th>待上课</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="teacherStatsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="studentsView" class="view hidden">
+        <div class="filters">
+          <input id="studentKeyword" placeholder="搜索姓名、手机号、课程、老师" />
+          <select id="studentTeacher"></select>
+          <select id="studentStatus">
+            <option value="">全部状态</option>
+            <option value="active">在读</option>
+            <option value="expired">已到期</option>
+            <option value="inactive">停用</option>
+            <option value="trial">体验课</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>学员</th>
+                <th>电话</th>
+                <th>老师</th>
+                <th>课程</th>
+                <th>类型</th>
+                <th>已上</th>
+                <th>剩余</th>
+                <th>到期</th>
+                <th>缴费</th>
+              </tr>
+            </thead>
+            <tbody id="studentsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="teachersView" class="view hidden">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>老师</th>
+                <th>校区</th>
+                <th>手机号</th>
+                <th>主授课程</th>
+                <th>可授课程</th>
+                <th>学员数</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="teachersBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="/admin/app.js"></script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import cors from 'cors';
 import dayjs from 'dayjs';
 import express from 'express';
@@ -7,8 +8,14 @@ import { buildSlots, canSelfChange, DEFAULT_SLOTS, isMonday, isReleased, remaini
 import { appointmentView, availabilityForDate, campusName, contractById, courseCatalog, saveStore, store, teacherName } from './store.js';
 
 const app = express();
+const adminSessions = new Map();
+const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+const adminPassword = process.env.ADMIN_PASSWORD || 'spinach2026';
+const adminSessionTtlMs = 12 * 60 * 60 * 1000;
+
 app.use(cors());
 app.use(express.json());
+app.use('/admin', express.static('admin'));
 
 function ok(res, data) {
   res.json({ data });
@@ -16,6 +23,64 @@ function ok(res, data) {
 
 function fail(res, status, message) {
   res.status(status).json({ error: { message } });
+}
+
+function safeEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left));
+  const rightBuffer = Buffer.from(String(right));
+  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function requireAdmin(req, res, next) {
+  const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const session = adminSessions.get(token);
+  if (!session || session.expiresAt < Date.now()) {
+    if (token) adminSessions.delete(token);
+    return fail(res, 401, '请先登录后台');
+  }
+  session.expiresAt = Date.now() + adminSessionTtlMs;
+  req.admin = session;
+  next();
+}
+
+function contractRemainingLessons(contract) {
+  if (contract.total_lessons === null || contract.total_lessons === undefined) return null;
+  return Math.max(0, Number(contract.total_lessons || 0) - Number(contract.completed_lessons || 0));
+}
+
+function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
+  const normalized = String(keyword || '').trim();
+  return (store.bindings || [])
+    .filter((binding) => !teacherId || binding.teacher_id === teacherId)
+    .map((binding) => {
+      const student = store.students.find((item) => item.id === binding.student_id) || {};
+      const teacher = store.teachers.find((item) => item.id === binding.teacher_id) || {};
+      const contract = contractById(binding.contract_id) || {};
+      return {
+        binding_id: binding.id,
+        student_id: student.id,
+        name: student.name,
+        phone: student.phone,
+        status: student.status,
+        payment_status: student.payment_status,
+        campus_name: campusName(student.campus_id),
+        teacher_id: teacher.id,
+        teacher_name: teacher.name,
+        course: binding.course || contract.course,
+        mode: contract.mode,
+        book_level: contract.book_level,
+        total_lessons: contract.total_lessons,
+        completed_lessons: contract.completed_lessons,
+        remaining_lessons: contractRemainingLessons(contract),
+        enrolled_at: student.enrolled_at,
+        expires_at: student.expires_at,
+        progress: contract.progress,
+        notes: student.notes
+      };
+    })
+    .filter((item) => !status || item.status === status)
+    .filter((item) => !normalized || [item.name, item.phone, item.course, item.teacher_name, item.campus_name].some((value) => String(value || '').includes(normalized)))
+    .sort((a, b) => String(a.teacher_name).localeCompare(String(b.teacher_name), 'zh-Hans-CN') || String(a.name).localeCompare(String(b.name), 'zh-Hans-CN'));
 }
 
 function normalizeAvailabilitySlots(slots) {
@@ -101,6 +166,82 @@ function syncEvents({ teacherId, studentId, limit = 6 } = {}) {
 }
 
 app.get('/health', (_req, res) => ok(res, { status: 'ok' }));
+
+app.get('/admin', (_req, res) => {
+  res.sendFile('index.html', { root: 'admin' });
+});
+
+app.post('/admin/api/login', (req, res) => {
+  const parsed = z.object({
+    username: z.string().min(1),
+    password: z.string().min(1)
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '请输入账号和密码');
+  if (!safeEqual(parsed.data.username, adminUsername) || !safeEqual(parsed.data.password, adminPassword)) {
+    return fail(res, 401, '账号或密码不正确');
+  }
+  const token = crypto.randomBytes(32).toString('base64url');
+  adminSessions.set(token, {
+    username: adminUsername,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + adminSessionTtlMs
+  });
+  ok(res, { token, username: adminUsername, expires_in: adminSessionTtlMs / 1000 });
+});
+
+app.get('/admin/api/me', requireAdmin, (req, res) => {
+  ok(res, { username: req.admin.username });
+});
+
+app.post('/admin/api/logout', requireAdmin, (req, res) => {
+  const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  adminSessions.delete(token);
+  ok(res, { ok: true });
+});
+
+app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
+  const teacherStats = (store.teachers || []).map((teacher) => {
+    const rows = adminStudentRows({ teacherId: teacher.id });
+    const appointments = (store.appointments || []).filter((item) => item.teacher_id === teacher.id && item.status === 'booked');
+    return {
+      id: teacher.id,
+      name: teacher.name,
+      course: teacher.primary_course,
+      status: teacher.status,
+      student_count: new Set(rows.map((item) => item.student_id)).size,
+      binding_count: rows.length,
+      booked_count: appointments.length
+    };
+  });
+  ok(res, {
+    counts: {
+      campuses: (store.campuses || []).length,
+      teachers: (store.teachers || []).length,
+      students: (store.students || []).length,
+      contracts: (store.contracts || []).length,
+      bindings: (store.bindings || []).length,
+      appointments: (store.appointments || []).length,
+      lesson_records: (store.lessonRecords || []).length
+    },
+    teachers: teacherStats
+  });
+});
+
+app.get('/admin/api/students', requireAdmin, (req, res) => {
+  ok(res, adminStudentRows({
+    keyword: req.query.keyword,
+    teacherId: req.query.teacherId,
+    status: req.query.status
+  }));
+});
+
+app.get('/admin/api/teachers', requireAdmin, (_req, res) => {
+  ok(res, (store.teachers || []).map((teacher) => ({
+    ...teacher,
+    campus_name: campusName(teacher.campus_id),
+    student_count: new Set(adminStudentRows({ teacherId: teacher.id }).map((item) => item.student_id)).size
+  })));
+});
 
 app.get('/courses', (_req, res) => ok(res, store.courses || courseCatalog));
 

@@ -20,6 +20,14 @@ npm run dev
 
 默认接口地址为 `http://localhost:3010`。轻量服务器部署时可复制 `backend/.env.example` 为 `.env`，设置 `PORT`、`DATABASE_PATH`，后续再补微信 `appid/secret` 登录。
 
+网页登录后台：
+
+```bash
+ADMIN_USERNAME=admin ADMIN_PASSWORD=你的强密码 npm start
+```
+
+本地地址为 `http://localhost:3010/admin/`，服务器部署后地址为 `http://服务器公网IP/admin/`。如果没有设置 `ADMIN_USERNAME` 和 `ADMIN_PASSWORD`，默认账号是 `admin`，默认密码是 `spinach2026`，正式使用前应改成强密码。
+
 导入真实琴行数据：
 
 ```bash
