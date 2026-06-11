@@ -37,7 +37,7 @@ DATABASE_PATH=/var/lib/spinach-music/spinach-music.json npm run import:music-sch
 sudo systemctl restart spinach-music-api
 ```
 
-默认读取 `docs/data-templates/music-school-import/music-school-import-current-yidian.xlsx`，导入前会自动备份当前 JSON 数据库。服务器已产生真实业务数据后不要再执行 `npm run seed`。
+默认读取 `docs/data-templates/music-school-import/music-school-import-current-yidian.xlsx`，导入前会自动备份当前 JSON 数据库。导入默认使用 `--replace` 替换校区、老师、学员、合同和绑定主数据，避免演示数据混入真实运营；如需保留并合并旧主数据，可追加 `-- --merge`。服务器已产生真实业务数据后不要再执行 `npm run seed`。
 
 小程序：
 

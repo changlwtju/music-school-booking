@@ -13,16 +13,19 @@ function parseArgs(argv) {
   const args = {
     input: defaultInputPath,
     database: defaultDatabasePath,
-    dryRun: false
+    dryRun: false,
+    replace: true
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--input') args.input = path.resolve(argv[++index]);
     else if (arg === '--database') args.database = path.resolve(argv[++index]);
     else if (arg === '--dry-run') args.dryRun = true;
+    else if (arg === '--merge') args.replace = false;
+    else if (arg === '--replace') args.replace = true;
     else if (arg === '--help' || arg === '-h') {
       console.log([
-        'Usage: npm run import:music-school -- [--input path/to.xlsx] [--database path/to/spinach-music.json] [--dry-run]',
+        'Usage: npm run import:music-school -- [--input path/to.xlsx] [--database path/to/spinach-music.json] [--dry-run] [--replace|--merge]',
         '',
         `Default input: ${defaultInputPath}`,
         `Default database: ${defaultDatabasePath}`
@@ -256,11 +259,29 @@ function buildImportData(workbook, existingStore) {
   }
 
   const nextStore = structuredClone(existingStore);
+  return { imported, store: nextStore };
+}
+
+function applyImport(existingStore, imported, { replace }) {
+  const nextStore = structuredClone(existingStore);
+  if (replace) {
+    const importedIds = {
+      students: new Set(imported.students.map((item) => item.id)),
+      teachers: new Set(imported.teachers.map((item) => item.id)),
+      contracts: new Set(imported.contracts.map((item) => item.id)),
+      bindings: new Set(imported.bindings.map((item) => item.id)),
+      users: new Set(imported.users.map((item) => item.id)),
+      campuses: new Set(imported.campuses.map((item) => item.id))
+    };
+    nextStore.appointments = (nextStore.appointments || []).filter((item) => importedIds.students.has(item.student_id) && importedIds.teachers.has(item.teacher_id));
+    nextStore.lessonRecords = (nextStore.lessonRecords || []).filter((item) => importedIds.students.has(item.student_id) && importedIds.teachers.has(item.teacher_id));
+    nextStore.teacherAvailability = (nextStore.teacherAvailability || []).filter((item) => importedIds.teachers.has(item.teacher_id));
+    for (const key of ['campuses', 'users', 'teachers', 'students', 'contracts', 'bindings']) nextStore[key] = [];
+  }
   for (const key of ['campuses', 'users', 'teachers', 'students', 'contracts', 'bindings']) {
     nextStore[key] ||= [];
     for (const item of imported[key]) upsertById(nextStore[key], item);
   }
-
   return { imported, store: nextStore };
 }
 
@@ -271,7 +292,8 @@ function main() {
 
   const workbook = XLSX.readFile(args.input, { cellDates: true });
   const existingStore = JSON.parse(fs.readFileSync(args.database, 'utf8'));
-  const { imported, store } = buildImportData(workbook, existingStore);
+  const { imported } = buildImportData(workbook, existingStore);
+  const { store } = applyImport(existingStore, imported, { replace: args.replace });
 
   const studentsByTeacher = new Map();
   for (const binding of imported.bindings) {
@@ -287,6 +309,7 @@ function main() {
   console.log(`Students: ${imported.students.length}`);
   console.log(`Contracts: ${imported.contracts.length}`);
   console.log(`Bindings: ${imported.bindings.length}`);
+  console.log(`Mode: ${args.replace ? 'replace imported master data' : 'merge imported master data'}`);
   for (const teacher of imported.teachers) {
     console.log(`Teacher ${teacher.name}: ${teacher.id}, students ${studentsByTeacher.get(teacher.id)?.size || 0}`);
   }

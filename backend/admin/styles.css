@@ -24,7 +24,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -114,7 +115,10 @@ p {
 
 .login-form input,
 .filters input,
-.filters select {
+.filters select,
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -126,13 +130,17 @@ p {
 
 .login-form input:focus,
 .filters input:focus,
-.filters select:focus {
+.filters select:focus,
+.admin-form input:focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(75, 155, 104, 0.14);
 }
 
 .login-form button,
-.secondary-btn {
+.secondary-btn,
+.admin-form button {
   border: 0;
   border-radius: 6px;
   background: var(--green);
@@ -270,6 +278,87 @@ nav {
   margin-bottom: 14px;
 }
 
+.form-card {
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.form-card summary {
+  cursor: pointer;
+  padding: 14px 16px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.open-card {
+  padding: 16px;
+}
+
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.open-card .admin-form {
+  padding: 0;
+}
+
+.admin-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-form button {
+  align-self: end;
+  min-height: 42px;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.form-message {
+  align-self: center;
+  min-height: 20px;
+  color: var(--green-dark);
+}
+
+.field-title {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.slot-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.slot-option input {
+  width: auto;
+}
+
 .table-wrap {
   overflow: auto;
   background: var(--panel);
@@ -337,8 +426,14 @@ tr:last-child td {
   }
 
   .metrics,
-  .filters {
+  .filters,
+  .admin-form,
+  .slot-grid {
     grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: span 1;
   }
 
   .topbar {

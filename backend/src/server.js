@@ -49,6 +49,46 @@ function contractRemainingLessons(contract) {
   return Math.max(0, Number(contract.total_lessons || 0) - Number(contract.completed_lessons || 0));
 }
 
+function stableId(prefix, ...parts) {
+  const hash = crypto.createHash('sha1')
+    .update(parts.map((part) => String(part || '').trim()).join('|'))
+    .digest('hex')
+    .slice(0, 10);
+  return `${prefix}-${hash}`;
+}
+
+function upsertById(list, item) {
+  const existing = list.find((entry) => entry.id === item.id);
+  if (existing) Object.assign(existing, item);
+  else list.push(item);
+}
+
+function splitList(value) {
+  return String(value || '')
+    .split(/[、,，/]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeStudentStatus(value) {
+  if (['expired', '已到期', '到期'].includes(value)) return 'expired';
+  if (['inactive', '停用'].includes(value)) return 'inactive';
+  if (['trial', '体验课'].includes(value)) return 'trial';
+  return 'active';
+}
+
+function normalizePaymentStatus(value) {
+  if (['paid', '已付清', '已缴费'].includes(value)) return 'paid';
+  if (['installment', '分期'].includes(value)) return 'installment';
+  if (['trial', '体验课'].includes(value)) return 'trial';
+  return value || 'pending';
+}
+
+function normalizeTeacherStatus(value) {
+  if (['inactive', '停用', '离职'].includes(value)) return 'inactive';
+  return 'active';
+}
+
 function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
   const normalized = String(keyword || '').trim();
   return (store.bindings || [])
@@ -214,6 +254,11 @@ app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
       booked_count: appointments.length
     };
   });
+  const upcomingAppointments = (store.appointments || [])
+    .filter((item) => item.status === 'booked')
+    .map(appointmentView)
+    .sort((a, b) => `${a.date} ${a.start_time}`.localeCompare(`${b.date} ${b.start_time}`))
+    .slice(0, 8);
   ok(res, {
     counts: {
       campuses: (store.campuses || []).length,
@@ -224,7 +269,9 @@ app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
       appointments: (store.appointments || []).length,
       lesson_records: (store.lessonRecords || []).length
     },
-    teachers: teacherStats
+    teachers: teacherStats,
+    campuses: store.campuses || [],
+    upcomingAppointments
   });
 });
 
@@ -242,6 +289,198 @@ app.get('/admin/api/teachers', requireAdmin, (_req, res) => {
     campus_name: campusName(teacher.campus_id),
     student_count: new Set(adminStudentRows({ teacherId: teacher.id }).map((item) => item.student_id)).size
   })));
+});
+
+app.post('/admin/api/teachers', requireAdmin, (req, res) => {
+  const parsed = z.object({
+    name: z.string().min(1),
+    phone: z.string().optional(),
+    campusId: z.string().min(1),
+    primaryCourse: z.string().min(1),
+    courses: z.string().optional(),
+    status: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '老师信息不完整');
+  const campus = store.campuses.find((item) => item.id === parsed.data.campusId);
+  if (!campus) return fail(res, 404, '校区不存在');
+  const teacherId = stableId('teacher', campus.id, parsed.data.name);
+  const userId = stableId('user-teacher', campus.id, parsed.data.name);
+  const courses = splitList(parsed.data.courses || parsed.data.primaryCourse);
+  const user = {
+    id: userId,
+    openid: `admin-${userId}`,
+    name: parsed.data.name,
+    phone: parsed.data.phone || '',
+    role: 'teacher',
+    status: normalizeTeacherStatus(parsed.data.status)
+  };
+  const teacher = {
+    id: teacherId,
+    user_id: userId,
+    campus_id: campus.id,
+    name: parsed.data.name,
+    phone: parsed.data.phone || '',
+    avatar: '/assets/brand/avatar.png',
+    primary_course: parsed.data.primaryCourse,
+    courses: courses.length ? courses : [parsed.data.primaryCourse],
+    status: normalizeTeacherStatus(parsed.data.status)
+  };
+  upsertById(store.users, user);
+  upsertById(store.teachers, teacher);
+  saveStore(store);
+  ok(res, teacher);
+});
+
+app.get('/admin/api/campuses', requireAdmin, (_req, res) => {
+  ok(res, store.campuses || []);
+});
+
+app.post('/admin/api/campuses', requireAdmin, (req, res) => {
+  const parsed = z.object({
+    name: z.string().min(1),
+    shortName: z.string().optional(),
+    address: z.string().min(1),
+    phone: z.string().optional(),
+    hours: z.string().optional(),
+    latitude: z.union([z.number(), z.string()]).optional(),
+    longitude: z.union([z.number(), z.string()]).optional(),
+    desc: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '校区信息不完整');
+  const shortName = parsed.data.shortName || parsed.data.name;
+  const campus = {
+    id: stableId('campus', shortName, parsed.data.name),
+    name: parsed.data.name,
+    short_name: shortName,
+    address: parsed.data.address,
+    phone: parsed.data.phone || '请联系校区老师',
+    latitude: parsed.data.latitude === '' || parsed.data.latitude === undefined ? null : Number(parsed.data.latitude),
+    longitude: parsed.data.longitude === '' || parsed.data.longitude === undefined ? null : Number(parsed.data.longitude),
+    hours: parsed.data.hours || '周二至周日 12:00-20:00',
+    image: '/assets/brand/brand-display.png',
+    release_time: '20:00',
+    desc: parsed.data.desc || ''
+  };
+  upsertById(store.campuses, campus);
+  saveStore(store);
+  ok(res, campus);
+});
+
+app.post('/admin/api/students', requireAdmin, (req, res) => {
+  const parsed = z.object({
+    name: z.string().min(1),
+    phone: z.string().optional(),
+    campusId: z.string().min(1),
+    teacherId: z.string().min(1),
+    course: z.string().min(1),
+    mode: z.enum(['fixed20', 'book']).default('book'),
+    bookLevel: z.string().optional(),
+    totalLessons: z.union([z.number(), z.string()]).optional(),
+    completedLessons: z.union([z.number(), z.string()]).optional(),
+    enrolledAt: z.string().optional(),
+    expiresAt: z.string().optional(),
+    paymentStatus: z.string().optional(),
+    status: z.string().optional(),
+    progress: z.string().optional(),
+    notes: z.string().optional(),
+    attachmentUrl: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '学员信息不完整');
+  const { name, phone = '', campusId, teacherId, course } = parsed.data;
+  const campus = store.campuses.find((item) => item.id === campusId);
+  if (!campus) return fail(res, 404, '校区不存在');
+  const teacher = store.teachers.find((item) => item.id === teacherId && item.status === 'active');
+  if (!teacher) return fail(res, 404, '老师不存在或已停用');
+
+  const studentId = stableId('student', campusId, phone || name);
+  const userId = stableId('user-student', campusId, phone || name);
+  const contractId = stableId('contract', studentId, course, teacherId);
+  const bindingId = stableId('binding', studentId, course, teacherId);
+  const completedLessons = Number(parsed.data.completedLessons || 0);
+  const totalLessons = parsed.data.mode === 'book' ? null : Number(parsed.data.totalLessons || 20);
+  const studentStatus = normalizeStudentStatus(parsed.data.status);
+  const nowDate = dayjs().format('YYYY-MM-DD');
+
+  upsertById(store.users, {
+    id: userId,
+    openid: `admin-${userId}`,
+    name,
+    phone,
+    role: 'student',
+    status: studentStatus
+  });
+  upsertById(store.students, {
+    id: studentId,
+    user_id: userId,
+    campus_id: campusId,
+    name,
+    phone,
+    avatar: '/assets/brand/avatar.png',
+    enrolled_at: parsed.data.enrolledAt || nowDate,
+    expires_at: parsed.data.expiresAt || '',
+    payment_status: normalizePaymentStatus(parsed.data.paymentStatus),
+    status: studentStatus,
+    notes: parsed.data.notes || ''
+  });
+  upsertById(store.contracts, {
+    id: contractId,
+    contract_no: `ADM-${contractId.slice('contract-'.length).toUpperCase()}`,
+    student_id: studentId,
+    campus_id: campusId,
+    course,
+    mode: parsed.data.mode,
+    book_level: parsed.data.bookLevel || '',
+    total_lessons: totalLessons,
+    completed_lessons: completedLessons,
+    valid_lessons: completedLessons,
+    invalid_lessons: 0,
+    progress: parsed.data.progress || '',
+    signed_at: parsed.data.enrolledAt || nowDate,
+    expires_at: parsed.data.expiresAt || '',
+    status: studentStatus,
+    attachment_url: parsed.data.attachmentUrl || ''
+  });
+  upsertById(store.bindings, {
+    id: bindingId,
+    student_id: studentId,
+    teacher_id: teacherId,
+    campus_id: campusId,
+    contract_id: contractId,
+    course,
+    status: studentStatus,
+    created_at: new Date().toISOString()
+  });
+  saveStore(store);
+  ok(res, adminStudentRows({}).find((item) => item.binding_id === bindingId));
+});
+
+app.get('/admin/api/schedule-slots', requireAdmin, (_req, res) => {
+  ok(res, DEFAULT_SLOTS.map(([startTime, endTime]) => ({ startTime, endTime })));
+});
+
+app.post('/admin/api/lock-slots', requireAdmin, (req, res) => {
+  const parsed = z.object({
+    teacherId: z.string().min(1),
+    campusId: z.string().min(1),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    reason: z.string().optional(),
+    startTimes: z.array(z.string()).min(1)
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '锁定时段信息不完整');
+  const slots = DEFAULT_SLOTS.map(([startTime, endTime]) => ({
+    start_time: startTime,
+    end_time: endTime,
+    status: parsed.data.startTimes.includes(startTime) ? 'closed' : 'open',
+    reason: parsed.data.startTimes.includes(startTime) ? (parsed.data.reason || '临时不可约') : ''
+  }));
+  const availability = upsertTeacherAvailability({
+    teacherId: parsed.data.teacherId,
+    campusId: parsed.data.campusId,
+    date: parsed.data.date,
+    slots
+  });
+  saveStore(store);
+  ok(res, availability);
 });
 
 app.get('/courses', (_req, res) => ok(res, store.courses || courseCatalog));

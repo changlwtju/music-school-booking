@@ -45,6 +45,8 @@
         <button class="nav-item active" data-view="dashboard">总览</button>
         <button class="nav-item" data-view="students">学员</button>
         <button class="nav-item" data-view="teachers">老师</button>
+        <button class="nav-item" data-view="campuses">校区</button>
+        <button class="nav-item" data-view="schedule">课表</button>
       </nav>
       <button id="logoutBtn" class="logout-btn">退出登录</button>
     </aside>
@@ -77,9 +79,48 @@
             <tbody id="teacherStatsBody"></tbody>
           </table>
         </div>
+        <h3>近期预约</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>时间</th>
+                <th>学员</th>
+                <th>老师</th>
+                <th>课程</th>
+                <th>校区</th>
+              </tr>
+            </thead>
+            <tbody id="appointmentsBody"></tbody>
+          </table>
+        </div>
       </section>
 
       <section id="studentsView" class="view hidden">
+        <details class="form-card">
+          <summary>新增学员</summary>
+          <form id="studentForm" class="admin-form">
+            <label><span>姓名</span><input name="name" required /></label>
+            <label><span>电话</span><input name="phone" /></label>
+            <label><span>校区</span><select name="campusId" class="campus-select" required></select></label>
+            <label><span>绑定老师</span><select name="teacherId" class="teacher-select" required></select></label>
+            <label><span>乐器项目</span><input name="course" required placeholder="钢琴 / 吉他 / 架子鼓" /></label>
+            <label><span>课程类型</span><select name="mode"><option value="book">按册学习</option><option value="fixed20">固定课时</option></select></label>
+            <label><span>按册级别</span><input name="bookLevel" /></label>
+            <label><span>总课时</span><input name="totalLessons" type="number" min="0" /></label>
+            <label><span>已上课时</span><input name="completedLessons" type="number" min="0" value="0" /></label>
+            <label><span>报名日期</span><input name="enrolledAt" type="date" /></label>
+            <label><span>到期日期</span><input name="expiresAt" type="date" /></label>
+            <label><span>缴费状态</span><select name="paymentStatus"><option value="pending">待确认</option><option value="paid">已付清</option><option value="installment">分期</option><option value="trial">体验课</option></select></label>
+            <label><span>在读状态</span><select name="status"><option value="active">在读</option><option value="expired">已到期</option><option value="inactive">停用</option><option value="trial">体验课</option></select></label>
+            <label><span>当前进度</span><input name="progress" /></label>
+            <label><span>合同附件 URL</span><input name="attachmentUrl" placeholder="后续可接上传文件" /></label>
+            <label class="span-2"><span>备注</span><textarea name="notes" rows="2"></textarea></label>
+            <button type="submit">保存学员</button>
+            <p id="studentFormMessage" class="form-message"></p>
+          </form>
+        </details>
         <div class="filters">
           <input id="studentKeyword" placeholder="搜索姓名、手机号、课程、老师" />
           <select id="studentTeacher"></select>
@@ -112,6 +153,19 @@
       </section>
 
       <section id="teachersView" class="view hidden">
+        <details class="form-card">
+          <summary>新增老师</summary>
+          <form id="teacherForm" class="admin-form">
+            <label><span>姓名</span><input name="name" required /></label>
+            <label><span>电话</span><input name="phone" /></label>
+            <label><span>校区</span><select name="campusId" class="campus-select" required></select></label>
+            <label><span>主授乐器</span><input name="primaryCourse" required /></label>
+            <label><span>可授乐器</span><input name="courses" placeholder="钢琴、吉他" /></label>
+            <label><span>状态</span><select name="status"><option value="active">在职</option><option value="inactive">停用</option></select></label>
+            <button type="submit">保存老师</button>
+            <p id="teacherFormMessage" class="form-message"></p>
+          </form>
+        </details>
         <div class="table-wrap">
           <table>
             <thead>
@@ -125,8 +179,58 @@
                 <th>状态</th>
               </tr>
             </thead>
-            <tbody id="teachersBody"></tbody>
+          <tbody id="teachersBody"></tbody>
           </table>
+        </div>
+      </section>
+
+      <section id="campusesView" class="view hidden">
+        <details class="form-card">
+          <summary>新增校区/地址</summary>
+          <form id="campusForm" class="admin-form">
+            <label><span>校区名称</span><input name="name" required /></label>
+            <label><span>校区简称</span><input name="shortName" placeholder="一店 / 二店" /></label>
+            <label class="span-2"><span>地址</span><input name="address" required /></label>
+            <label><span>电话</span><input name="phone" /></label>
+            <label><span>营业时间</span><input name="hours" value="周二至周日 12:00-20:00" /></label>
+            <label><span>纬度</span><input name="latitude" /></label>
+            <label><span>经度</span><input name="longitude" /></label>
+            <label class="span-2"><span>备注</span><textarea name="desc" rows="2"></textarea></label>
+            <button type="submit">保存校区</button>
+            <p id="campusFormMessage" class="form-message"></p>
+          </form>
+        </details>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>校区</th>
+                <th>简称</th>
+                <th>地址</th>
+                <th>电话</th>
+                <th>营业时间</th>
+              </tr>
+            </thead>
+            <tbody id="campusesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="scheduleView" class="view hidden">
+        <div class="form-card open-card">
+          <h3>临时锁定某个时间</h3>
+          <form id="lockForm" class="admin-form">
+            <label><span>老师</span><select name="teacherId" class="teacher-select" required></select></label>
+            <label><span>校区</span><select name="campusId" class="campus-select" required></select></label>
+            <label><span>日期</span><input name="date" type="date" required /></label>
+            <label><span>原因</span><input name="reason" value="老师临时请假" /></label>
+            <div class="span-2">
+              <span class="field-title">固定课表时段</span>
+              <div id="slotCheckboxes" class="slot-grid"></div>
+            </div>
+            <button type="submit">锁定所选时段</button>
+            <p id="lockFormMessage" class="form-message"></p>
+          </form>
         </div>
       </section>
     </section>
