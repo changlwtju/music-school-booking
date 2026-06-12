@@ -468,11 +468,17 @@ function renderAccessProfileOptions() {
   renderInspectors();
 }
 
-function renderAdminAppointmentBindings() {
+function renderAdminBookingBindings() {
   const options = state.students
     .filter((student) => student.status === 'active')
     .map((student) => `<option value="${student.student_id}|${student.binding_id}">${student.name} · ${student.course || '-'} · ${student.teacher_name || '-'}</option>`);
-  el('adminAppointmentBinding').innerHTML = options.join('');
+  el('adminBookingBinding').innerHTML = options.join('');
+}
+
+function syncAdminBookingMode() {
+  const isTrial = el('adminBookingType').value === 'trial';
+  document.querySelectorAll('.trial-booking-field').forEach((node) => node.classList.toggle('hidden', !isTrial));
+  document.querySelectorAll('.regular-booking-field').forEach((node) => node.classList.toggle('hidden', isTrial));
 }
 
 function renderInspectors() {
@@ -499,8 +505,7 @@ function renderSlots() {
   `).join('');
   el('fixedSlotCheckboxes').innerHTML = html;
   el('lockSlotCheckboxes').innerHTML = html;
-  el('trialStartTime').innerHTML = state.slots.map((slot) => `<option value="${slot.startTime}">${slot.startTime}-${slot.endTime}</option>`).join('');
-  el('adminAppointmentStartTime').innerHTML = state.slots.map((slot) => `<option value="${slot.startTime}">${slot.startTime}-${slot.endTime}</option>`).join('');
+  el('adminBookingStartTime').innerHTML = state.slots.map((slot) => `<option value="${slot.startTime}">${slot.startTime}-${slot.endTime}</option>`).join('');
 }
 
 function renderMonthlyHours() {
@@ -599,7 +604,7 @@ async function loadStudents() {
   state.students = await api(`/admin/api/students?${params.toString()}`);
   renderStudents();
   renderAccessProfileOptions();
-  renderAdminAppointmentBindings();
+  renderAdminBookingBindings();
 }
 
 async function loadMonthlyHours() {
@@ -673,35 +678,32 @@ el('accessForm').elements.role.addEventListener('change', (event) => {
   if (matched) el('accessProfile').value = matched.value;
 });
 
-el('trialForm').addEventListener('submit', async (event) => {
+el('adminBookingType').addEventListener('change', syncAdminBookingMode);
+
+el('adminBookingForm').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const message = el('trialFormMessage');
+  const message = el('adminBookingMessage');
   try {
-    const result = await api('/admin/api/trial-appointments', { method: 'POST', body: JSON.stringify(formJson(event.currentTarget)) });
-    message.textContent = `体验课已同步到老师课表：${result.date} ${result.start_time}-${result.end_time}`;
+    const isTrial = el('adminBookingType').value === 'trial';
+    const data = formJson(event.currentTarget);
+    let result;
+    if (isTrial) {
+      data.notes = data.note;
+      result = await api('/admin/api/trial-appointments', { method: 'POST', body: JSON.stringify(data) });
+      message.textContent = `体验课已同步老师课表：${result.date} ${result.start_time}-${result.end_time}`;
+    } else {
+      const [studentId, bindingId] = String(data.studentBinding || '').split('|');
+      delete data.studentBinding;
+      data.studentId = studentId;
+      data.bindingId = bindingId;
+      result = await api('/admin/api/appointments', { method: 'POST', body: JSON.stringify(data) });
+      message.textContent = `正式课已同步老师课表：${result.date} ${result.start_time}-${result.end_time}`;
+    }
     event.currentTarget.reset();
+    syncAdminBookingMode();
     await loadDashboard();
     await loadAppointments();
     await loadStudents();
-  } catch (error) {
-    message.textContent = error.message;
-  }
-});
-
-el('adminAppointmentForm').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const message = el('adminAppointmentMessage');
-  try {
-    const data = formJson(event.currentTarget);
-    const [studentId, bindingId] = String(data.studentBinding || '').split('|');
-    delete data.studentBinding;
-    data.studentId = studentId;
-    data.bindingId = bindingId;
-    const result = await api('/admin/api/appointments', { method: 'POST', body: JSON.stringify(data) });
-    message.textContent = `已约课并同步老师课表：${result.date} ${result.start_time}-${result.end_time}`;
-    event.currentTarget.reset();
-    await loadDashboard();
-    await loadAppointments();
   } catch (error) {
     message.textContent = error.message;
   }
@@ -920,6 +922,7 @@ document.querySelectorAll('.nav-item').forEach((button) => {
     el('password').value = remembered.password;
     el('rememberPassword').checked = true;
   }
+  syncAdminBookingMode();
   if (!state.token) {
     showLogin();
     return;

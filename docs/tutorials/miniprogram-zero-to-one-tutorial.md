@@ -1696,7 +1696,7 @@ python3 scripts/import_music_school_excel.py \
 实现调整：
 
 - 新增受后台 session 保护的 `POST /admin/api/trial-appointments`。
-- Web 后台“课表”页新增“录入体验课”表单，填写体验学员、电话、老师、校区、课程、日期和开始时间。
+- Web 后台“课表”页的“后台约课处理”统一支持体验课录入，填写体验学员、电话、老师、校区、课程、日期和开始时间。
 - 体验课预约标记 `lesson_type: trial`，`created_by: admin`，不占用正式合同课时。
 - 旧接口 `POST /admin/trial-appointments` 继续保留并复用同一创建逻辑，避免早期测试命令失效。
 - 登录页新增记住密码选项，数据保存在当前浏览器 `localStorage`；正式上线前建议继续使用强密码，并尽量只在可信设备启用。
@@ -1730,7 +1730,7 @@ python3 scripts/import_music_school_excel.py \
 
 - 新增 `POST /admin/api/appointments`：后台为已有学员课程绑定创建正式预约。
 - 新增 `POST /admin/api/appointments/:appointmentId/cancel`：后台取消任意待上课预约并记录取消原因。
-- Web 后台“课表”页新增“后台代约正式课”表单。
+- Web 后台“课表”页使用“后台约课处理”统一承接正式课代约和体验课录入。
 - 后台约课绕过学生端“前一天 20:00 释放”限制，但仍校验周一休息、老师不可约时段、课时余额和同老师同时间冲突。
 - 后台约课写入 `created_by: admin`，便于后续审计和同步台账区分来源。
 - 后台约课同步记录中，待上课记录显示“取消”操作。
