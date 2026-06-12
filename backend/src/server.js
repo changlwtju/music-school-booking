@@ -185,6 +185,7 @@ function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
         student_id: student.id,
         name: student.name,
         phone: student.phone,
+        avatar: student.avatar,
         status: student.status,
         payment_status: student.payment_status,
         campus_id: student.campus_id,
@@ -193,6 +194,7 @@ function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
         birthday: student.birthday,
         teacher_id: teacher.id,
         teacher_name: teacher.name,
+        teacher_avatar: teacher.avatar,
         contract_no: contract.contract_no,
         course: binding.course || contract.course,
         mode: contract.mode,
@@ -479,6 +481,7 @@ app.patch('/admin/api/teachers/:teacherId', requireAdmin, (req, res) => {
     name: z.string().optional(),
     phone: z.string().optional(),
     campusId: z.string().optional(),
+    avatar: z.string().optional(),
     primaryCourse: z.string().optional(),
     courses: z.string().optional(),
     status: z.string().optional()
@@ -489,6 +492,7 @@ app.patch('/admin/api/teachers/:teacherId', requireAdmin, (req, res) => {
   if (data.name !== undefined) teacher.name = data.name;
   if (data.phone !== undefined) teacher.phone = data.phone;
   if (data.campusId !== undefined) teacher.campus_id = data.campusId;
+  if (data.avatar !== undefined) teacher.avatar = data.avatar;
   if (data.primaryCourse !== undefined) teacher.primary_course = data.primaryCourse;
   if (data.courses !== undefined) teacher.courses = splitList(data.courses || data.primaryCourse || teacher.primary_course);
   if (data.status !== undefined) teacher.status = normalizeTeacherStatus(data.status);
@@ -516,6 +520,8 @@ app.post('/admin/api/campuses', requireAdmin, (req, res) => {
     address: z.string().min(1),
     phone: z.string().optional(),
     hours: z.string().optional(),
+    image: z.string().optional(),
+    releaseTime: z.string().optional(),
     latitude: z.union([z.number(), z.string()]).optional(),
     longitude: z.union([z.number(), z.string()]).optional(),
     desc: z.string().optional(),
@@ -536,8 +542,8 @@ app.post('/admin/api/campuses', requireAdmin, (req, res) => {
     latitude: parsed.data.latitude === '' || parsed.data.latitude === undefined ? null : Number(parsed.data.latitude),
     longitude: parsed.data.longitude === '' || parsed.data.longitude === undefined ? null : Number(parsed.data.longitude),
     hours: parsed.data.hours || '周二至周日 12:00-20:00',
-    image: '/assets/brand/brand-display.png',
-    release_time: '20:00',
+    image: parsed.data.image || '/assets/brand/brand-display.png',
+    release_time: parsed.data.releaseTime || '20:00',
     desc: parsed.data.desc || '',
     status,
     display_order: parsed.data.displayOrder === '' || parsed.data.displayOrder === undefined ? (store.campuses || []).length + 1 : Number(parsed.data.displayOrder),
@@ -558,6 +564,8 @@ app.patch('/admin/api/campuses/:campusId', requireAdmin, (req, res) => {
     address: z.string().optional(),
     phone: z.string().optional(),
     hours: z.string().optional(),
+    image: z.string().optional(),
+    releaseTime: z.string().optional(),
     latitude: z.union([z.number(), z.string()]).optional(),
     longitude: z.union([z.number(), z.string()]).optional(),
     desc: z.string().optional(),
@@ -573,6 +581,8 @@ app.patch('/admin/api/campuses/:campusId', requireAdmin, (req, res) => {
   if (data.address !== undefined) campus.address = data.address;
   if (data.phone !== undefined) campus.phone = data.phone;
   if (data.hours !== undefined) campus.hours = data.hours;
+  if (data.image !== undefined) campus.image = data.image;
+  if (data.releaseTime !== undefined) campus.release_time = data.releaseTime;
   if (data.latitude !== undefined) campus.latitude = data.latitude === '' ? null : Number(data.latitude);
   if (data.longitude !== undefined) campus.longitude = data.longitude === '' ? null : Number(data.longitude);
   if (data.desc !== undefined) campus.desc = data.desc;
@@ -601,7 +611,10 @@ app.post('/admin/api/students', requireAdmin, (req, res) => {
     status: z.string().optional(),
     progress: z.string().optional(),
     notes: z.string().optional(),
+    contractNo: z.string().optional(),
     attachmentUrl: z.string().optional(),
+    attachmentName: z.string().optional(),
+    attachmentData: z.string().optional(),
     attachmentName: z.string().optional(),
     attachmentData: z.string().optional(),
     guardianName: z.string().optional(),
@@ -705,7 +718,10 @@ app.patch('/admin/api/students/:studentId/bindings/:bindingId', requireAdmin, (r
     status: z.string().optional(),
     progress: z.string().optional(),
     notes: z.string().optional(),
+    contractNo: z.string().optional(),
     attachmentUrl: z.string().optional(),
+    attachmentName: z.string().optional(),
+    attachmentData: z.string().optional(),
     guardianName: z.string().optional(),
     birthday: z.string().optional()
   }).safeParse(req.body);
@@ -744,9 +760,18 @@ app.patch('/admin/api/students/:studentId/bindings/:bindingId', requireAdmin, (r
   if (data.totalLessons !== undefined) contract.total_lessons = contract.mode === 'book' || data.totalLessons === '' ? null : Number(data.totalLessons);
   if (data.completedLessons !== undefined) contract.completed_lessons = Number(data.completedLessons || 0);
   if (data.progress !== undefined) contract.progress = data.progress;
+  if (data.contractNo !== undefined) contract.contract_no = data.contractNo;
   if (data.enrolledAt !== undefined) contract.signed_at = data.enrolledAt;
   if (data.expiresAt !== undefined) contract.expires_at = data.expiresAt;
-  if (data.attachmentUrl !== undefined) contract.attachment_url = data.attachmentUrl;
+  if (data.attachmentData !== undefined) {
+    contract.attachment_url = saveBase64File({
+      folder: 'contracts',
+      fileName: data.attachmentName,
+      data: data.attachmentData
+    }) || data.attachmentUrl || contract.attachment_url;
+  } else if (data.attachmentUrl !== undefined) {
+    contract.attachment_url = data.attachmentUrl;
+  }
 
   const user = (store.users || []).find((item) => item.id === student.user_id);
   if (user) {

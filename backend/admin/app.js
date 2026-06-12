@@ -297,6 +297,15 @@ function inputField(name, label, value = '', type = 'text') {
   `;
 }
 
+function fileField(name, label, accept = '') {
+  return `
+    <label>
+      <span>${label}</span>
+      <input name="${name}" type="file" ${accept ? `accept="${escapeHtml(accept)}"` : ''} />
+    </label>
+  `;
+}
+
 function textAreaField(name, label, value = '') {
   return `
     <label class="span-2">
@@ -348,6 +357,8 @@ function openEditModal(type, item) {
       selectField('paymentStatus', '缴费状态', item.payment_status, [{ value: 'pending', label: '待确认' }, { value: 'paid', label: '已付清' }, { value: 'installment', label: '分期' }, { value: 'trial', label: '体验课' }]),
       selectField('status', '在读状态', item.status, [{ value: 'active', label: '在读' }, { value: 'expired', label: '已到期' }, { value: 'inactive', label: '停用' }, { value: 'trial', label: '体验课' }]),
       inputField('progress', '当前进度', item.progress),
+      inputField('contractNo', '合同编号', item.contract_no),
+      fileField('attachmentFile', '合同附件', '.pdf,image/*'),
       inputField('attachmentUrl', '合同附件 URL', item.attachment_url),
       textAreaField('notes', '备注', item.notes)
     ],
@@ -355,6 +366,7 @@ function openEditModal(type, item) {
       inputField('name', '姓名', item.name),
       inputField('phone', '手机号', item.phone),
       selectField('campusId', '校区', item.campus_id, campusOptions),
+      inputField('avatar', '头像 URL', item.avatar),
       selectField('primaryCourse', '主授乐器', item.primary_course, courseOptions),
       inputField('courses', '可授乐器', (item.courses || []).join('、')),
       selectField('status', '状态', item.status, [{ value: 'active', label: '在职' }, { value: 'inactive', label: '停用' }])
@@ -371,6 +383,8 @@ function openEditModal(type, item) {
       inputField('address', '地址', item.address),
       inputField('phone', '电话', item.phone),
       inputField('hours', '营业时间', item.hours),
+      inputField('image', '展示图 URL', item.image),
+      inputField('releaseTime', '释放时间', item.release_time),
       selectField('status', '状态', item.status || 'active', [{ value: 'active', label: '营业中' }, { value: 'planned', label: '筹备中' }, { value: 'inactive', label: '停用' }]),
       inputField('displayOrder', '排序', item.display_order ?? '', 'number'),
       inputField('latitude', '纬度', item.latitude ?? ''),
@@ -754,6 +768,12 @@ el('editForm').addEventListener('submit', async (event) => {
   const data = formJson(event.currentTarget);
   try {
     if (context.type === 'student') {
+      const file = event.currentTarget.elements.attachmentFile?.files?.[0];
+      delete data.attachmentFile;
+      if (file) {
+        data.attachmentName = file.name;
+        data.attachmentData = await fileToDataUrl(file);
+      }
       await api(`/admin/api/students/${context.item.student_id}/bindings/${context.item.binding_id}`, { method: 'PATCH', body: JSON.stringify(data) });
     } else if (context.type === 'teacher') {
       await api(`/admin/api/teachers/${context.item.id}`, { method: 'PATCH', body: JSON.stringify(data) });
