@@ -166,16 +166,21 @@ function ensureInspectorAccess(data) {
 function ensureManagerAccess(data) {
   data.accessUsers ||= [];
   const managers = [
-    { id: 'access-manager-zhu-yuanxin', name: '朱元鑫', phone: '16724456666', notes: '门店管理者；管理者端代约、取消及巡检账号' },
+    { id: 'access-manager-zhu-yunsheng', legacyIds: ['access-manager-zhu-yuanxin'], name: '朱云笙', phone: '16724456666', notes: '门店管理者；管理者端代约、取消及巡检账号' },
     { id: 'access-manager-liu-jiwen', name: '刘继文', phone: '15604414117', notes: '门店管理者；管理者端代约、取消及巡检账号' },
     { id: 'access-manager-wang-jinwu', name: '王金武', phone: '18543171304', notes: '门店管理者；管理者端代约、取消及巡检账号' },
     { id: 'access-manager-chang-liwen', name: '常立文', phone: '18222288952', notes: '开发者；管理者端功能巡检账号' }
   ];
   let changed = false;
   for (const manager of managers) {
-    const existing = data.accessUsers.find((item) => item.id === manager.id);
+    const existing = data.accessUsers.find((item) => (
+      item.id === manager.id
+      || manager.legacyIds?.includes(item.id)
+      || (item.role === 'manager' && item.phone === manager.phone)
+    ));
     if (existing) {
       const before = JSON.stringify(existing);
+      existing.id = manager.id;
       existing.role = 'manager';
       existing.profile_id = '';
       existing.name = manager.name;
@@ -186,7 +191,10 @@ function ensureManagerAccess(data) {
       changed = changed || before !== JSON.stringify(existing);
     } else {
       data.accessUsers.push({
-        ...manager,
+        id: manager.id,
+        name: manager.name,
+        phone: manager.phone,
+        notes: manager.notes,
         role: 'manager',
         profile_id: '',
         wechat_openid: '',

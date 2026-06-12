@@ -9,9 +9,9 @@ const backendRoot = path.resolve(__dirname, '..');
 const defaultDatabasePath = process.env.DATABASE_PATH || path.join(backendRoot, 'data', 'spinach-music.json');
 
 const staff = [
-  { campus: '一店', name: '刘梦齐', phone: '15584430084', primaryCourse: '钢琴', courses: ['钢琴'], formerNames: ['刘芗齐'] },
-  { campus: '一店', name: '闫俊浩', phone: '13894477985', primaryCourse: '吉他', courses: ['吉他', '电吉他'], formerNames: ['闻俊浩'] },
-  { campus: '二店', name: '郝瀚', phone: '18104028815', primaryCourse: '钢琴', courses: ['钢琴'] },
+  { campus: '一店', name: '刘芗齐', phone: '15584430084', primaryCourse: '钢琴', courses: ['钢琴'], formerNames: ['刘梦齐'] },
+  { campus: '一店', name: '闻俊浩', phone: '13894477985', primaryCourse: '吉他', courses: ['吉他', '电吉他'], formerNames: ['闫俊浩'] },
+  { campus: '二店', name: '郝翰', phone: '18104028815', primaryCourse: '钢琴', courses: ['钢琴'], formerNames: ['郝瀚'] },
   { campus: '二店', name: '张日', phone: '15510986234', primaryCourse: '吉他', courses: ['吉他', '电吉他'] },
   { campus: '二店', name: '郁世辉', phone: '18643225081', primaryCourse: '架子鼓', courses: ['架子鼓'] }
 ];
@@ -140,11 +140,13 @@ function main() {
       access.name = row.name;
       access.phone = row.phone;
     }
-    teacherByKey.set(`${row.campus}|${row.name}`, teacher);
+    for (const name of [row.name, ...(row.formerNames || [])]) {
+      teacherByKey.set(`${row.campus}|${name}`, teacher);
+    }
   }
 
-  const workbook = XLSX.readFile(args.input, { raw: true });
-  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '' }).slice(1);
+  const workbook = XLSX.readFile(args.input, { cellDates: false });
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '', raw: false }).slice(1);
   let currentGroup = '';
   let importedBindings = 0;
   const importedStudentIds = new Set();

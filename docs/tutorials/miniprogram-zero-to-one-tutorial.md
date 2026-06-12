@@ -1974,6 +1974,54 @@ POST /manager/appointments/:appointmentId/cancel
 - 接入微信 `code2Session`，将管理者手机号登录升级为微信 OpenID 自动识别。
 - 增加持久化操作日志，便于追踪谁为哪位学生代约或取消了哪节课。
 
+### 5.11 从源文件复核姓名并修正生产数据
+
+本轮发现个别姓名来自截图或人工视觉识别，和真实源文件不一致。后续涉及学员、老师和管理者姓名时，必须直接读取源文件，不以图片截图为准。
+
+本次直接读取的源文件：
+
+- 一店学员：`docs/data-templates/学员信息.numbers`
+- 教职员：微信接收目录中的 `教职员信息.numbers`
+- 二店学员：微信接收目录中的 `二店学员信息.xlsx`
+
+源文件复核结果：
+
+- 一店钢琴老师：`刘芗齐`，不是 `刘梦齐`。
+- 一店吉他老师：`闻俊浩`，不是 `闫俊浩`。
+- 门店管理者：`朱云笙`，不是 `朱元鑫`。
+- 二店钢琴老师存在源文件冲突：教职员信息为 `郝翰`，二店学员表为 `郝瀚`。当前以教职员信息作为老师姓名权威来源，并在导入脚本中把 `郝瀚` 作为别名兼容。
+- 二店学员表中 `木吉他` 按普通 `吉他` 处理，只有 `电吉他` 需要单独标记。
+
+代码处理：
+
+- `backend/scripts/import-second-store-data.js` 已改为正确老师姓名，并保留旧错字作为别名，避免重复导入时找不到已有老师。
+- 二店 Excel 日期读取改为按显示文本读取，避免 `5.10` 被当作数字 `5.1`。
+- `backend/src/store.js` 的管理者巡检账号初始化改为 `朱云笙`，并兼容旧 id `access-manager-zhu-yuanxin`。
+- 新增 `backend/scripts/normalize-staff-data.js`，用于修正已经落到真实数据库中的旧错字。
+
+生产数据修正命令：
+
+```bash
+cd ~/music-school-booking
+git pull origin main
+cd backend
+npm ci --omit=dev
+DATABASE_PATH=/var/lib/spinach-music/spinach-music.json npm run normalize:staff
+sudo systemctl restart spinach-music-api
+```
+
+验证命令：
+
+```bash
+curl -s http://127.0.0.1:3010/admin/app.js | grep -n "manager"
+```
+
+后台刷新后，应看到：
+
+- 访问权限中管理者为 `朱云笙`。
+- 老师负载中显示 `刘芗齐`、`闻俊浩`。
+- 二店钢琴老师按教职员源文件显示为 `郝翰`。
+
 ## 6. 待确认问题
 
 当前第一期试营业核心规则已基本收口，但正式上线前需要继续确认管理员、分享和考勤联动细节。
