@@ -242,6 +242,22 @@
       </section>
 
       <section id="accessView" class="view hidden">
+        <div class="form-card open-card">
+          <h3>前端巡检账号</h3>
+          <p>同一个巡检手机号可分别进入学员端和老师端；后续正式微信登录后，可在这里绑定对应微信 OpenID。</p>
+          <form id="inspectorForm" class="admin-form">
+            <label><span>显示姓名</span><input name="name" /></label>
+            <label><span>巡检手机号</span><input name="phone" /></label>
+            <label><span>学生端档案</span><select name="studentProfileId" id="inspectorStudentProfile"></select></label>
+            <label><span>老师端档案</span><select name="teacherProfileId" id="inspectorTeacherProfile"></select></label>
+            <label><span>学生端微信 OpenID</span><input name="studentWechatOpenid" placeholder="正式微信登录后填写" /></label>
+            <label><span>老师端微信 OpenID</span><input name="teacherWechatOpenid" placeholder="正式微信登录后填写" /></label>
+            <label><span>状态</span><select name="status"><option value="active">允许访问</option><option value="inactive">停用</option></select></label>
+            <label class="span-2"><span>备注</span><input name="notes" placeholder="例如前端巡检账号" /></label>
+            <button type="submit">保存巡检账号</button>
+            <p id="inspectorFormMessage" class="form-message"></p>
+          </form>
+        </div>
         <details class="form-card">
           <summary>开通小程序访问</summary>
           <form id="accessForm" class="admin-form">
@@ -249,6 +265,7 @@
             <label><span>关联档案</span><select name="profileId" id="accessProfile" required></select></label>
             <label><span>显示姓名</span><input name="name" /></label>
             <label><span>登录手机号</span><input name="phone" required /></label>
+            <label><span>微信 OpenID</span><input name="wechatOpenid" placeholder="正式微信登录后填写" /></label>
             <label><span>状态</span><select name="status"><option value="active">允许访问</option><option value="inactive">停用</option></select></label>
             <label class="span-2"><span>备注</span><input name="notes" placeholder="例如体验账号、家长手机号等" /></label>
             <button type="submit">保存权限</button>
@@ -262,6 +279,7 @@
                 <th>身份</th>
                 <th>姓名</th>
                 <th>手机号</th>
+                <th>微信 OpenID</th>
                 <th>关联档案</th>
                 <th>校区</th>
                 <th>状态</th>

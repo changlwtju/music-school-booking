@@ -123,7 +123,12 @@ function ensureInspectorAccess(data) {
     const existing = data.accessUsers.find((entry) => entry.id === item.id);
     if (existing) {
       const before = JSON.stringify(existing);
-      Object.assign(existing, item);
+      existing.role = item.role;
+      existing.profile_id ||= item.profile_id;
+      existing.name ||= item.name;
+      existing.phone ||= item.phone;
+      existing.status ||= item.status;
+      existing.notes ||= item.notes;
       changed = changed || before !== JSON.stringify(existing);
     } else {
       data.accessUsers.push(item);
@@ -137,6 +142,7 @@ function ensureInspectorAccess(data) {
       profile_id: firstStudent.id,
       name: '前端巡检',
       phone: '13800000010',
+      wechat_openid: '',
       status: 'active',
       notes: '前端巡检账号：学生端'
     });
@@ -148,6 +154,7 @@ function ensureInspectorAccess(data) {
       profile_id: firstTeacher.id,
       name: '前端巡检',
       phone: '13800000010',
+      wechat_openid: '',
       status: 'active',
       notes: '前端巡检账号：老师端'
     });

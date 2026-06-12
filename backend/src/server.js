@@ -171,6 +171,11 @@ function accessRows() {
   }).sort((a, b) => String(a.role).localeCompare(String(b.role)) || String(a.name).localeCompare(String(b.name), 'zh-Hans-CN'));
 }
 
+function inspectorRows() {
+  ensureAccessUsers();
+  return ['student', 'teacher'].map((role) => accessRows().find((item) => item.id === `access-inspector-${role}`)).filter(Boolean);
+}
+
 function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
   const normalized = String(keyword || '').trim();
   return (store.bindings || [])
@@ -854,6 +859,7 @@ app.post('/admin/api/access-users', requireAdmin, (req, res) => {
     profileId: z.string().min(1),
     name: z.string().optional(),
     phone: z.string().optional(),
+    wechatOpenid: z.string().optional(),
     status: z.string().optional(),
     notes: z.string().optional()
   }).safeParse(req.body);
@@ -868,6 +874,7 @@ app.post('/admin/api/access-users', requireAdmin, (req, res) => {
     profile_id: parsed.data.profileId,
     name: parsed.data.name || profile.name,
     phone: parsed.data.phone || profile.phone || '',
+    wechat_openid: parsed.data.wechatOpenid || '',
     status: parsed.data.status === 'inactive' ? 'inactive' : 'active',
     notes: parsed.data.notes || ''
   };
@@ -885,6 +892,7 @@ app.patch('/admin/api/access-users/:accessId', requireAdmin, (req, res) => {
     profileId: z.string().optional(),
     name: z.string().optional(),
     phone: z.string().optional(),
+    wechatOpenid: z.string().optional(),
     status: z.string().optional(),
     notes: z.string().optional()
   }).safeParse(req.body);
@@ -899,10 +907,47 @@ app.patch('/admin/api/access-users/:accessId', requireAdmin, (req, res) => {
   item.profile_id = profileId;
   if (parsed.data.name !== undefined) item.name = parsed.data.name || profile.name;
   if (parsed.data.phone !== undefined) item.phone = parsed.data.phone;
+  if (parsed.data.wechatOpenid !== undefined) item.wechat_openid = parsed.data.wechatOpenid;
   if (parsed.data.status !== undefined) item.status = parsed.data.status === 'inactive' ? 'inactive' : 'active';
   if (parsed.data.notes !== undefined) item.notes = parsed.data.notes;
   saveStore(store);
   ok(res, item);
+});
+
+app.get('/admin/api/inspectors', requireAdmin, (_req, res) => {
+  ok(res, inspectorRows());
+});
+
+app.patch('/admin/api/inspectors', requireAdmin, (req, res) => {
+  const parsed = z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    studentProfileId: z.string().optional(),
+    teacherProfileId: z.string().optional(),
+    studentWechatOpenid: z.string().optional(),
+    teacherWechatOpenid: z.string().optional(),
+    status: z.string().optional(),
+    notes: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '巡检账号信息不完整');
+  ensureAccessUsers();
+  const studentAccess = store.accessUsers.find((item) => item.id === 'access-inspector-student');
+  const teacherAccess = store.accessUsers.find((item) => item.id === 'access-inspector-teacher');
+  if (!studentAccess || !teacherAccess) return fail(res, 404, '巡检账号不存在');
+  if (parsed.data.studentProfileId && !store.students.some((item) => item.id === parsed.data.studentProfileId)) return fail(res, 404, '巡检学生档案不存在');
+  if (parsed.data.teacherProfileId && !store.teachers.some((item) => item.id === parsed.data.teacherProfileId)) return fail(res, 404, '巡检老师档案不存在');
+  for (const item of [studentAccess, teacherAccess]) {
+    if (parsed.data.name !== undefined) item.name = parsed.data.name;
+    if (parsed.data.phone !== undefined) item.phone = parsed.data.phone;
+    if (parsed.data.status !== undefined) item.status = parsed.data.status === 'inactive' ? 'inactive' : 'active';
+    if (parsed.data.notes !== undefined) item.notes = `${parsed.data.notes}${item.role === 'teacher' ? '：老师端' : '：学生端'}`;
+  }
+  if (parsed.data.studentProfileId !== undefined) studentAccess.profile_id = parsed.data.studentProfileId;
+  if (parsed.data.teacherProfileId !== undefined) teacherAccess.profile_id = parsed.data.teacherProfileId;
+  if (parsed.data.studentWechatOpenid !== undefined) studentAccess.wechat_openid = parsed.data.studentWechatOpenid;
+  if (parsed.data.teacherWechatOpenid !== undefined) teacherAccess.wechat_openid = parsed.data.teacherWechatOpenid;
+  saveStore(store);
+  ok(res, inspectorRows());
 });
 
 app.get('/admin/api/appointments', requireAdmin, (req, res) => {
@@ -1065,6 +1110,7 @@ app.post('/auth/demo-login', (req, res) => {
           id: 'user-inspector',
           name: inspectorAccess.name,
           phone: inspectorAccess.phone,
+          wechat_openid: inspectorAccess.wechat_openid || '',
           role,
           status: inspectorAccess.status
         },
@@ -1083,15 +1129,20 @@ app.post('/auth/demo-login', (req, res) => {
 app.post('/auth/role-login', (req, res) => {
   const parsed = z.object({
     role: z.enum(['student', 'teacher']),
-    phone: z.string().min(1)
+    phone: z.string().optional(),
+    openid: z.string().optional()
   }).safeParse(req.body);
-  if (!parsed.success) return fail(res, 400, '请输入手机号');
+  if (!parsed.success || (!parsed.data.phone && !parsed.data.openid)) return fail(res, 400, '请输入手机号或微信身份');
   ensureAccessUsers();
-  const phone = parsed.data.phone.trim();
+  const phone = String(parsed.data.phone || '').trim();
+  const openid = String(parsed.data.openid || '').trim();
   const access = (store.accessUsers || []).find((item) => (
     item.role === parsed.data.role
     && item.status === 'active'
-    && String(item.phone || '').trim() === phone
+    && (
+      (openid && String(item.wechat_openid || '').trim() === openid)
+      || (phone && String(item.phone || '').trim() === phone)
+    )
   ));
   if (!access) return fail(res, 403, '未开通该身份的小程序访问权限，请联系琴行后台添加');
   const profile = parsed.data.role === 'teacher'
@@ -1103,6 +1154,7 @@ app.post('/auth/role-login', (req, res) => {
       id: access.id,
       name: access.name || profile.name,
       phone: access.phone,
+      wechat_openid: access.wechat_openid || '',
       role: access.role,
       status: access.status
     },

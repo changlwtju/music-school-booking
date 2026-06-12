@@ -10,6 +10,7 @@ const state = {
   courses: [],
   appointments: [],
   accessUsers: [],
+  inspectors: [],
   slots: [],
   monthlyHours: [],
   editContext: null
@@ -237,6 +238,7 @@ function renderAccessUsers() {
       <td>${roleLabel(item.role)}</td>
       <td>${item.name || item.profile_name || '-'}</td>
       <td>${item.phone || '-'}</td>
+      <td>${item.wechat_openid || '-'}</td>
       <td>${item.profile_name || '-'}</td>
       <td>${item.campus_name || '-'}</td>
       <td><span class="tag">${item.status === 'inactive' ? '停用' : '允许访问'}</span></td>
@@ -380,6 +382,7 @@ function openEditModal(type, item) {
     access: [
       inputField('name', '显示姓名', item.name),
       inputField('phone', '登录手机号', item.phone),
+      inputField('wechatOpenid', '微信 OpenID', item.wechat_openid),
       selectField('status', '访问状态', item.status, [{ value: 'active', label: '允许访问' }, { value: 'inactive', label: '停用' }]),
       textAreaField('notes', '备注', item.notes)
     ],
@@ -459,6 +462,24 @@ function renderAccessProfileOptions() {
     ...state.teachers.map((teacher) => `<option value="${teacher.id}" data-role="teacher">老师 · ${teacher.name} · ${teacher.primary_course || ''}</option>`)
   ];
   el('accessProfile').innerHTML = profileOptions.join('');
+  el('inspectorStudentProfile').innerHTML = studentOptions.join('');
+  el('inspectorTeacherProfile').innerHTML = state.teachers.map((teacher) => `<option value="${teacher.id}">${teacher.name} · ${teacher.primary_course || ''}</option>`).join('');
+  renderInspectors();
+}
+
+function renderInspectors() {
+  const student = state.inspectors.find((item) => item.role === 'student');
+  const teacher = state.inspectors.find((item) => item.role === 'teacher');
+  const form = el('inspectorForm');
+  if (!form || !student || !teacher) return;
+  form.elements.name.value = student.name || teacher.name || '前端巡检';
+  form.elements.phone.value = student.phone || teacher.phone || '';
+  form.elements.studentProfileId.value = student.profile_id || '';
+  form.elements.teacherProfileId.value = teacher.profile_id || '';
+  form.elements.studentWechatOpenid.value = student.wechat_openid || '';
+  form.elements.teacherWechatOpenid.value = teacher.wechat_openid || '';
+  form.elements.status.value = student.status === 'inactive' && teacher.status === 'inactive' ? 'inactive' : 'active';
+  form.elements.notes.value = String(student.notes || teacher.notes || '').replace(/：(学生端|老师端)$/, '');
 }
 
 function renderSlots() {
@@ -555,6 +576,11 @@ async function loadAccessUsers() {
   renderAccessUsers();
 }
 
+async function loadInspectors() {
+  state.inspectors = await api('/admin/api/inspectors');
+  renderInspectors();
+}
+
 async function loadStudents() {
   const params = new URLSearchParams({
     keyword: el('studentKeyword').value.trim(),
@@ -581,6 +607,7 @@ async function loadAll() {
   await loadStudents();
   await loadAppointments();
   await loadAccessUsers();
+  await loadInspectors();
 }
 
 el('loginForm').addEventListener('submit', async (event) => {
@@ -698,6 +725,19 @@ el('accessForm').addEventListener('submit', async (event) => {
     message.textContent = '访问权限已保存';
     event.currentTarget.reset();
     await loadAccessUsers();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+el('inspectorForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const message = el('inspectorFormMessage');
+  try {
+    await api('/admin/api/inspectors', { method: 'PATCH', body: JSON.stringify(formJson(event.currentTarget)) });
+    message.textContent = '巡检账号已保存';
+    await loadAccessUsers();
+    await loadInspectors();
   } catch (error) {
     message.textContent = error.message;
   }
