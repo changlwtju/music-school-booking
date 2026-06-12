@@ -37,13 +37,15 @@ DATABASE_PATH=/var/lib/spinach-music/spinach-music.json npm run import:music-sch
 sudo systemctl restart spinach-music-api
 ```
 
-默认读取 `docs/data-templates/music-school-import/music-school-import-current-yidian.xlsx`，导入前会自动备份当前 JSON 数据库。导入默认使用 `--replace` 替换校区、老师、学员、合同和绑定主数据，避免演示数据混入真实运营；如需保留并合并旧主数据，可追加 `-- --merge`。服务器已产生真实业务数据后不要再执行 `npm run seed`。
+默认读取 `docs/data-templates/music-school-import/music-school-import-current-yidian.xlsx`，导入前会自动备份当前 JSON 数据库。导入默认使用 `--replace` 替换校区、老师、学员、合同和绑定主数据，避免演示数据混入真实运营；如需保留并合并旧主数据，可追加 `-- --merge`。
+
+生产环境真实运营数据以 `/var/lib/spinach-music/spinach-music.json` 为准，GitHub 不再同步 `backend/data/spinach-music.json` 这类业务数据。服务器已产生真实业务数据后不要再执行 `npm run seed`，新增学生、老师或门店应通过 Web 后台或导入脚本写入 `/var/lib/spinach-music/spinach-music.json`。
 
 二店学员表使用增量导入命令。脚本会保留现有预约与课后记录，将木吉他统一为吉他，仅把明确标注的电吉他保留为独立课程：
 
 ```bash
 cd backend
-npm run import:second-store -- --input /path/to/二店学员信息.xlsx
+DATABASE_PATH=/var/lib/spinach-music/spinach-music.json npm run import:second-store -- --input /path/to/二店学员信息.xlsx
 ```
 
 脚本同时更新一店、二店老师姓名和手机号。二店详细地址目前为待补充状态，可在后台维护。

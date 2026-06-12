@@ -1831,8 +1831,9 @@ npm run import:second-store -- \
 为什么数据不能只靠 GitHub 部署：
 
 - `backend/data/` 已加入 `.gitignore`。
-- GitHub 只同步代码和导入脚本，不同步本地真实业务数据库，也不应提交学生手机号等运营数据。
-- 服务器拉取新代码后，仍需把二店 Excel 安全传到服务器，并对服务器的 `DATABASE_PATH` 单独执行一次增量导入。
+- 真实运营数据只以服务器 `/var/lib/spinach-music/spinach-music.json` 为准。
+- GitHub 只同步代码、导入脚本、模板和教程，不再同步本地真实业务数据库，也不应提交学生手机号等运营数据。
+- 服务器拉取新代码后，如果有新增学生或老师资料，应通过 Web 后台或导入脚本直接写入服务器 `DATABASE_PATH` 指向的 `/var/lib/spinach-music/spinach-music.json`。
 - 服务器执行前应先确认数据库路径，并先运行 `--dry-run`。
 
 服务器部署示例：
@@ -1855,6 +1856,19 @@ npm run import:second-store -- \
 
 sudo systemctl restart spinach-music-api
 ```
+
+后续代码更新但不更新业务数据时，只需要：
+
+```bash
+cd /home/ubuntu/music-school-booking
+git pull origin main
+
+cd backend
+npm ci --omit=dev
+sudo systemctl restart spinach-music-api
+```
+
+不要再把 `backend/data/spinach-music.json` 作为生产数据来源复制到 `/var/lib`。只有在明确做数据迁移或初始化时，才手动备份并覆盖 `/var/lib/spinach-music/spinach-music.json`。
 
 管理者账号设计：
 
@@ -1954,7 +1968,7 @@ POST /manager/appointments/:appointmentId/cancel
 后续工作：
 
 - 在后台补充二店详细地址和地图导航关键词。
-- 服务器拉取代码后，对服务器真实数据库执行二店增量导入。
+- 新学生、新老师和门店资料统一写入服务器 `/var/lib/spinach-music/spinach-music.json`，GitHub 不再承载真实运营数据。
 - 在微信开发者工具中检查管理者入口、选择器、时段网格和取消按钮在不同手机尺寸下的显示。
 - 配置生产环境 `MOBILE_AUTH_SECRET`。
 - 接入微信 `code2Session`，将管理者手机号登录升级为微信 OpenID 自动识别。
