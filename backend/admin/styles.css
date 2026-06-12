@@ -114,13 +114,19 @@ p {
 }
 
 .login-form .remember-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  justify-self: start;
+  color: var(--muted);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .remember-row input {
+  flex: 0 0 auto;
   width: auto;
+  margin: 0;
 }
 
 .login-form input,
