@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/role-entry/index",
+    "pages/manager-booking/index",
     "pages/student-home/index",
     "pages/booking/index",
     "pages/campuses/index",

@@ -80,12 +80,18 @@ function appointmentStatusLabel(value) {
 }
 
 function roleLabel(value) {
-  return value === 'teacher' ? '老师端' : '学生端';
+  return {
+    student: '学生端',
+    teacher: '老师端',
+    manager: '管理者端'
+  }[value] || value || '-';
 }
 
 function appointmentSourceLabel(item) {
   if (item.lesson_type === 'trial') return '体验课';
-  return item.created_by === 'admin' ? '后台创建' : '学生端预约';
+  if (item.created_by === 'admin') return '后台创建';
+  if (String(item.created_by || '').startsWith('manager:')) return '管理者端代约';
+  return '学生端预约';
 }
 
 function addressStatusLabel(value) {
@@ -461,7 +467,8 @@ function renderAccessProfileOptions() {
     .map((student) => `<option value="${student.student_id}" data-role="student">学生 · ${student.name} · ${student.course || ''}</option>`);
   const profileOptions = [
     ...studentOptions,
-    ...state.teachers.map((teacher) => `<option value="${teacher.id}" data-role="teacher">老师 · ${teacher.name} · ${teacher.primary_course || ''}</option>`)
+    ...state.teachers.map((teacher) => `<option value="${teacher.id}" data-role="teacher">老师 · ${teacher.name} · ${teacher.primary_course || ''}</option>`),
+    '<option value="" data-role="manager">管理者 · 无需关联学员或老师档案</option>'
   ];
   el('accessProfile').innerHTML = profileOptions.join('');
   el('inspectorStudentProfile').innerHTML = studentOptions.join('');
@@ -749,7 +756,8 @@ el('accessForm').addEventListener('submit', async (event) => {
   const message = el('accessFormMessage');
   const data = formJson(event.currentTarget);
   const selectedProfile = el('accessProfile').selectedOptions[0];
-  if (selectedProfile?.dataset.role) data.role = selectedProfile.dataset.role;
+  if (data.role !== 'manager' && selectedProfile?.dataset.role) data.role = selectedProfile.dataset.role;
+  if (data.role === 'manager') data.profileId = '';
   try {
     await api('/admin/api/access-users', { method: 'POST', body: JSON.stringify(data) });
     message.textContent = '访问权限已保存';

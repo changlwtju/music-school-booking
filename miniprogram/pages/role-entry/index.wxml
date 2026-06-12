@@ -31,5 +31,14 @@
       <view class="role-arrow">›</view>
     </view>
 
+    <view class="role-card manager" bindtap="enterManager">
+      <image class="role-icon" src="/assets/icons/entry-members.png" mode="aspectFit" />
+      <view class="role-copy">
+        <view class="role-title">管理者端</view>
+        <view class="role-desc">手机代学生约课、查看近期预约并处理取消</view>
+      </view>
+      <view class="role-arrow">›</view>
+    </view>
+
   </view>
 </view>

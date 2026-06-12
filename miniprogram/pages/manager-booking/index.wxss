@@ -1,0 +1,40 @@
+.manager-form {
+  margin-bottom: 8rpx;
+}
+
+.picker-value {
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  padding: 18rpx;
+  border: 2rpx solid rgba(83, 157, 115, 0.2);
+  border-radius: 8rpx;
+  color: #1F3D32;
+  background: #FFFFFF;
+  font-size: 26rpx;
+  line-height: 1.45;
+}
+
+.appointment {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+
+.appointment-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.cancel-btn {
+  flex: 0 0 auto;
+  width: 132rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 8rpx;
+  color: #B5473C;
+  background: rgba(181, 71, 60, 0.1);
+  font-size: 24rpx;
+}

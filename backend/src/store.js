@@ -103,7 +103,8 @@ export function loadStore() {
   const pruned = pruneLegacyDemoData(data);
   const enriched = enrichSparseSchedule(data);
   const inspectorReady = ensureInspectorAccess(data);
-  if (pruned || enriched || inspectorReady) saveStore(data);
+  const managerReady = ensureManagerAccess(data);
+  if (pruned || enriched || inspectorReady || managerReady) saveStore(data);
   return data;
 }
 
@@ -158,6 +159,41 @@ function ensureInspectorAccess(data) {
       status: 'active',
       notes: '前端巡检账号：老师端'
     });
+  }
+  return changed;
+}
+
+function ensureManagerAccess(data) {
+  data.accessUsers ||= [];
+  const managers = [
+    { id: 'access-manager-zhu-yuanxin', name: '朱元鑫', phone: '16724456666', notes: '门店管理者；管理者端代约、取消及巡检账号' },
+    { id: 'access-manager-liu-jiwen', name: '刘继文', phone: '15604414117', notes: '门店管理者；管理者端代约、取消及巡检账号' },
+    { id: 'access-manager-wang-jinwu', name: '王金武', phone: '18543171304', notes: '门店管理者；管理者端代约、取消及巡检账号' },
+    { id: 'access-manager-chang-liwen', name: '常立文', phone: '18222288952', notes: '开发者；管理者端功能巡检账号' }
+  ];
+  let changed = false;
+  for (const manager of managers) {
+    const existing = data.accessUsers.find((item) => item.id === manager.id);
+    if (existing) {
+      const before = JSON.stringify(existing);
+      existing.role = 'manager';
+      existing.profile_id = '';
+      existing.name = manager.name;
+      existing.phone = manager.phone;
+      existing.wechat_openid ||= '';
+      existing.status ||= 'active';
+      existing.notes ||= manager.notes;
+      changed = changed || before !== JSON.stringify(existing);
+    } else {
+      data.accessUsers.push({
+        ...manager,
+        role: 'manager',
+        profile_id: '',
+        wechat_openid: '',
+        status: 'active'
+      });
+      changed = true;
+    }
   }
   return changed;
 }

@@ -1,4 +1,8 @@
 App({
+  onLaunch() {
+    this.globalData.authToken = wx.getStorageSync('managerAuthToken') || '';
+    this.globalData.manager = wx.getStorageSync('managerProfile') || null;
+  },
   globalData: {
     apiBase: 'http://49.233.131.93',
     studentId: 'student-a4e31feaf1',
@@ -7,6 +11,8 @@ App({
     lastSyncedAppointmentId: '',
     lastSyncedDate: '',
     enableDemoLogin: true,
-    role: ''
+    role: '',
+    authToken: '',
+    manager: null
   }
 });
