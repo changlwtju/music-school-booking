@@ -7,7 +7,10 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seed.js",
-    "import:music-school": "node scripts/import-music-school-data.js"
+    "import:music-school": "node scripts/import-music-school-data.js",
+    "backup": "node src/maintenance.js backup",
+    "export": "node src/maintenance.js export",
+    "restore": "node src/maintenance.js restore"
   },
   "dependencies": {
     "cors": "^2.8.5",

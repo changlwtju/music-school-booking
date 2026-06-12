@@ -25,5 +25,11 @@ Page({
       wx.showToast({ title: '已保存', icon: 'success' });
       setTimeout(() => wx.navigateBack(), 600);
     }
+  },
+  onShareAppMessage() {
+    return {
+      title: '菠菜现代音乐上课记录',
+      path: '/pages/role-entry/index'
+    };
   }
 });

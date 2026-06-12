@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', 'data', 'spinach-music.json');
+export const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', 'data', 'spinach-music.json');
 
 export const courseCatalog = [
   { id: 'course-piano', name: '钢琴', icon: '🎹', iconClass: 'piano', desc: '启蒙、考级与作品练习' },
@@ -45,6 +45,8 @@ export function createInitialData() {
       { id: 'user-student-19ae2b74d3', openid: 'demo-student-19ae2b74d3', name: '薛冬瑞', phone: '', role: 'student', status: 'active' }
     ],
     accessUsers: [
+      { id: 'access-inspector-student', role: 'student', profile_id: 'student-a4e31feaf1', name: '前端巡检', phone: '13800000010', status: 'active', notes: '前端巡检账号：学生端' },
+      { id: 'access-inspector-teacher', role: 'teacher', profile_id: 'teacher-695b7e061b', name: '前端巡检', phone: '13800000010', status: 'active', notes: '前端巡检账号：老师端' },
       { id: 'access-teacher-695b7e061b', role: 'teacher', profile_id: 'teacher-695b7e061b', name: '刘芗齐', phone: '', status: 'active', notes: '默认老师端访问权限' },
       { id: 'access-teacher-c823a14da0', role: 'teacher', profile_id: 'teacher-c823a14da0', name: '闻俊浩', phone: '', status: 'active', notes: '默认老师端访问权限' },
       { id: 'access-student-a4e31feaf1', role: 'student', profile_id: 'student-a4e31feaf1', name: '唐鹏', phone: '', status: 'active', notes: '默认学生端访问权限' },
@@ -100,7 +102,8 @@ export function loadStore() {
   const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
   const pruned = pruneLegacyDemoData(data);
   const enriched = enrichSparseSchedule(data);
-  if (pruned || enriched) saveStore(data);
+  const inspectorReady = ensureInspectorAccess(data);
+  if (pruned || enriched || inspectorReady) saveStore(data);
   return data;
 }
 
@@ -110,6 +113,47 @@ export function saveStore(store) {
 }
 
 export const store = loadStore();
+
+function ensureInspectorAccess(data) {
+  data.accessUsers ||= [];
+  const firstStudent = (data.students || []).find((item) => item.status === 'active') || (data.students || [])[0];
+  const firstTeacher = (data.teachers || []).find((item) => item.status === 'active') || (data.teachers || [])[0];
+  let changed = false;
+  const upsertAccess = (item) => {
+    const existing = data.accessUsers.find((entry) => entry.id === item.id);
+    if (existing) {
+      const before = JSON.stringify(existing);
+      Object.assign(existing, item);
+      changed = changed || before !== JSON.stringify(existing);
+    } else {
+      data.accessUsers.push(item);
+      changed = true;
+    }
+  };
+  if (firstStudent) {
+    upsertAccess({
+      id: 'access-inspector-student',
+      role: 'student',
+      profile_id: firstStudent.id,
+      name: '前端巡检',
+      phone: '13800000010',
+      status: 'active',
+      notes: '前端巡检账号：学生端'
+    });
+  }
+  if (firstTeacher) {
+    upsertAccess({
+      id: 'access-inspector-teacher',
+      role: 'teacher',
+      profile_id: firstTeacher.id,
+      name: '前端巡检',
+      phone: '13800000010',
+      status: 'active',
+      notes: '前端巡检账号：老师端'
+    });
+  }
+  return changed;
+}
 
 function pruneLegacyDemoData(data) {
   const legacyTeacherIds = new Set(['teacher-lin', 'teacher-qiao', 'teacher-sun']);

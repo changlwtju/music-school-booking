@@ -31,5 +31,11 @@ Page({
   goRecords() { wx.navigateTo({ url: '/pages/teacher-records/index' }); },
   goMembers() { wx.navigateTo({ url: '/pages/members/index' }); },
   goCampuses() { wx.navigateTo({ url: '/pages/campuses/index' }); },
-  goPayment() { wx.navigateTo({ url: '/pages/payment-code/index' }); }
+  goPayment() { wx.navigateTo({ url: '/pages/payment-code/index' }); },
+  onShareAppMessage() {
+    return {
+      title: '菠菜现代音乐老师工作台',
+      path: '/pages/role-entry/index'
+    };
+  }
 });

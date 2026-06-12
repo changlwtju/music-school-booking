@@ -90,5 +90,11 @@ Page({
   },
   editRecord(event) {
     wx.navigateTo({ url: `/pages/record-edit/index?appointmentId=${event.currentTarget.dataset.id}` });
+  },
+  onShareAppMessage() {
+    return {
+      title: '菠菜现代音乐老师课表',
+      path: '/pages/role-entry/index'
+    };
   }
 });

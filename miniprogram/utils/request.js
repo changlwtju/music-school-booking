@@ -12,9 +12,15 @@ export function request(path, options = {}) {
       url: `${apiBase}${path}`,
       method: options.method || 'GET',
       data: options.data || {},
+      header: {
+        ...(options.header || {}),
+        ...(app.globalData.authToken ? { Authorization: `Bearer ${app.globalData.authToken}` } : {})
+      },
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data.data);
+        } else if (res.statusCode === 404 && path.startsWith('/admin')) {
+          mockRequest(path, options).then(resolve);
         } else {
           wx.showToast({ title: res.data?.error?.message || '请求失败', icon: 'none' });
           resolve(null);

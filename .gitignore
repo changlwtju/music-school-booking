@@ -1,6 +1,7 @@
 node_modules/
 .env
 backend/data/
+backend/data/backups/
 npm-debug.log*
 .DS_Store
 @eaDir/

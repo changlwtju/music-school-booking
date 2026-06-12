@@ -748,6 +748,29 @@ app.get('/sync-events', (req, res) => {
 
 app.post('/auth/demo-login', (req, res) => {
   const role = req.body?.role === 'teacher' ? 'teacher' : 'student';
+  ensureAccessUsers();
+  const inspectorAccess = (store.accessUsers || []).find((item) => (
+    item.id === `access-inspector-${role}`
+    && item.role === role
+    && item.status === 'active'
+  ));
+  if (inspectorAccess) {
+    const profile = role === 'teacher'
+      ? store.teachers.find((item) => item.id === inspectorAccess.profile_id && item.status === 'active')
+      : store.students.find((item) => item.id === inspectorAccess.profile_id && item.status === 'active');
+    if (profile) {
+      return ok(res, {
+        user: {
+          id: 'user-inspector',
+          name: inspectorAccess.name,
+          phone: inspectorAccess.phone,
+          role,
+          status: inspectorAccess.status
+        },
+        profile
+      });
+    }
+  }
   const user = store.users.find((item) => item.role === role && item.status === 'active');
   if (!user) return fail(res, 404, '未找到可用账号');
   const profile = role === 'teacher'
