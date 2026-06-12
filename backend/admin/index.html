@@ -335,6 +335,18 @@
 
       <section id="scheduleView" class="view hidden">
         <div class="form-card open-card">
+          <h3>后台代约正式课</h3>
+          <p>管理员可为已开通课程绑定的学员临时约课；后台代约会同步到老师课表，并绕过学生端课表释放时间限制。</p>
+          <form id="adminAppointmentForm" class="admin-form">
+            <label class="span-2"><span>学员课程</span><select name="studentBinding" id="adminAppointmentBinding" required></select></label>
+            <label><span>日期</span><input name="date" type="date" required /></label>
+            <label><span>开始时间</span><select name="startTime" id="adminAppointmentStartTime" required></select></label>
+            <label class="span-2"><span>备注</span><input name="note" placeholder="例如后台临时约课、补课安排等" /></label>
+            <button type="submit">保存约课</button>
+            <p id="adminAppointmentMessage" class="form-message"></p>
+          </form>
+        </div>
+        <div class="form-card open-card">
           <h3>录入体验课</h3>
           <p>由后台登记体验学员和上课时段，保存后会同步出现在老师端课表中；体验课不占用正式合同课时。</p>
           <form id="trialForm" class="admin-form">
@@ -417,6 +429,7 @@
                 <th>来源</th>
                 <th>老师端</th>
                 <th>状态</th>
+                <th>操作</th>
               </tr>
             </thead>
           <tbody id="appointmentSyncBody"></tbody>

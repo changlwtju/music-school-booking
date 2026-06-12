@@ -302,6 +302,47 @@ function createTrialAppointment({
   return { appointment };
 }
 
+function createAdminAppointment({ studentId, bindingId, date, startTime, note = '' }) {
+  const slot = DEFAULT_SLOTS.find(([start]) => start === startTime);
+  if (!slot) return { error: { status: 400, message: '无效时间段' } };
+  if (isMonday(date)) return { error: { status: 409, message: '周一全店休息，不开放预约' } };
+  const binding = store.bindings.find((item) => item.id === bindingId && item.student_id === studentId && item.status === 'active');
+  if (!binding) return { error: { status: 404, message: '未找到可预约课程' } };
+  const student = store.students.find((item) => item.id === studentId && item.status === 'active');
+  if (!student) return { error: { status: 404, message: '学员不存在或已停用' } };
+  const teacher = store.teachers.find((item) => item.id === binding.teacher_id && item.status === 'active');
+  if (!teacher) return { error: { status: 404, message: '老师不存在或已停用' } };
+  const contract = contractById(binding.contract_id);
+  if (!contract || contract.status !== 'active') return { error: { status: 409, message: '合同状态不可预约' } };
+  const appointments = store.appointments.filter((item) => item.teacher_id === binding.teacher_id && item.date === date);
+  const availability = availabilityForDate(binding.teacher_id, date);
+  const bookableSlot = buildSlots({ date, appointments, contract, availability, enforceRelease: false }).find((item) => item.startTime === startTime);
+  if (!bookableSlot || bookableSlot.status !== 'available') {
+    return { error: { status: 409, message: bookableSlot?.reason || '该时间不可预约' } };
+  }
+  const now = new Date().toISOString();
+  const appointment = {
+    id: nanoid(),
+    student_id: studentId,
+    teacher_id: binding.teacher_id,
+    campus_id: binding.campus_id,
+    contract_id: binding.contract_id,
+    course: binding.course,
+    date,
+    start_time: startTime,
+    end_time: slot[1],
+    status: 'booked',
+    lesson_note: note,
+    created_by: 'admin',
+    created_at: now,
+    updated_at: now,
+    cancel_reason: ''
+  };
+  store.appointments.push(appointment);
+  saveStore(store);
+  return { appointment };
+}
+
 function upsertTeacherAvailability({ teacherId, campusId, date, slots }) {
   const now = new Date().toISOString();
   store.teacherAvailability ||= [];
@@ -963,6 +1004,32 @@ app.get('/admin/api/appointments', requireAdmin, (req, res) => {
     }))
     .sort((a, b) => `${b.date} ${b.start_time}`.localeCompare(`${a.date} ${a.start_time}`));
   ok(res, data);
+});
+
+app.post('/admin/api/appointments', requireAdmin, (req, res) => {
+  const parsed = z.object({
+    studentId: z.string(),
+    bindingId: z.string(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    startTime: z.string(),
+    note: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '后台约课信息不完整');
+  const result = createAdminAppointment(parsed.data);
+  if (result.error) return fail(res, result.error.status, result.error.message);
+  ok(res, appointmentView(result.appointment));
+});
+
+app.post('/admin/api/appointments/:appointmentId/cancel', requireAdmin, (req, res) => {
+  const appointment = store.appointments.find((item) => item.id === req.params.appointmentId);
+  if (!appointment) return fail(res, 404, '预约不存在');
+  if (appointment.status !== 'booked') return fail(res, 409, '当前预约不可取消');
+  appointment.status = 'cancelled';
+  appointment.cancel_reason = req.body?.reason || '后台取消';
+  appointment.cancelled_by = 'admin';
+  appointment.updated_at = new Date().toISOString();
+  saveStore(store);
+  ok(res, appointmentView(appointment));
 });
 
 app.get('/admin/api/schedule-slots', requireAdmin, (_req, res) => {

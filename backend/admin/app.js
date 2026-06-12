@@ -228,6 +228,7 @@ function renderAppointmentSync() {
       <td>${appointmentSourceLabel(item) || item.sync_source || '-'}</td>
       <td><span class="tag">${item.synced_to_teacher ? '已同步' : '未绑定'}</span></td>
       <td><span class="tag">${appointmentStatusLabel(item.status)}</span></td>
+      <td>${item.status === 'booked' ? `<button type="button" class="link-btn danger-link" data-cancel-appointment="${item.id}">取消</button>` : '-'}</td>
     </tr>
   `).join('');
 }
@@ -467,6 +468,13 @@ function renderAccessProfileOptions() {
   renderInspectors();
 }
 
+function renderAdminAppointmentBindings() {
+  const options = state.students
+    .filter((student) => student.status === 'active')
+    .map((student) => `<option value="${student.student_id}|${student.binding_id}">${student.name} · ${student.course || '-'} · ${student.teacher_name || '-'}</option>`);
+  el('adminAppointmentBinding').innerHTML = options.join('');
+}
+
 function renderInspectors() {
   const student = state.inspectors.find((item) => item.role === 'student');
   const teacher = state.inspectors.find((item) => item.role === 'teacher');
@@ -492,6 +500,7 @@ function renderSlots() {
   el('fixedSlotCheckboxes').innerHTML = html;
   el('lockSlotCheckboxes').innerHTML = html;
   el('trialStartTime').innerHTML = state.slots.map((slot) => `<option value="${slot.startTime}">${slot.startTime}-${slot.endTime}</option>`).join('');
+  el('adminAppointmentStartTime').innerHTML = state.slots.map((slot) => `<option value="${slot.startTime}">${slot.startTime}-${slot.endTime}</option>`).join('');
 }
 
 function renderMonthlyHours() {
@@ -590,6 +599,7 @@ async function loadStudents() {
   state.students = await api(`/admin/api/students?${params.toString()}`);
   renderStudents();
   renderAccessProfileOptions();
+  renderAdminAppointmentBindings();
 }
 
 async function loadMonthlyHours() {
@@ -673,6 +683,25 @@ el('trialForm').addEventListener('submit', async (event) => {
     await loadDashboard();
     await loadAppointments();
     await loadStudents();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+el('adminAppointmentForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const message = el('adminAppointmentMessage');
+  try {
+    const data = formJson(event.currentTarget);
+    const [studentId, bindingId] = String(data.studentBinding || '').split('|');
+    delete data.studentBinding;
+    data.studentId = studentId;
+    data.bindingId = bindingId;
+    const result = await api('/admin/api/appointments', { method: 'POST', body: JSON.stringify(data) });
+    message.textContent = `已约课并同步老师课表：${result.date} ${result.start_time}-${result.end_time}`;
+    event.currentTarget.reset();
+    await loadDashboard();
+    await loadAppointments();
   } catch (error) {
     message.textContent = error.message;
   }
@@ -818,6 +847,21 @@ el('exportBtn').addEventListener('click', async () => {
 });
 
 document.addEventListener('click', (event) => {
+  const cancelButton = event.target.closest('[data-cancel-appointment]');
+  if (cancelButton) {
+    const reason = window.prompt('请输入取消原因', '后台取消');
+    if (reason === null) return;
+    api(`/admin/api/appointments/${cancelButton.dataset.cancelAppointment}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    }).then(async () => {
+      await loadDashboard();
+      await loadAppointments();
+    }).catch((error) => {
+      window.alert(error.message);
+    });
+    return;
+  }
   const button = event.target.closest('[data-edit]');
   if (!button) return;
   const item = findEditable(button.dataset.edit, button.dataset.id);

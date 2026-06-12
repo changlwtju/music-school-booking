@@ -487,6 +487,10 @@ nav {
   color: var(--muted);
 }
 
+.danger-link {
+  color: var(--red);
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
