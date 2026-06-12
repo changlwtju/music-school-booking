@@ -181,12 +181,16 @@ function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
       const contract = contractById(binding.contract_id) || {};
       return {
         binding_id: binding.id,
+        contract_id: contract.id,
         student_id: student.id,
         name: student.name,
         phone: student.phone,
         status: student.status,
         payment_status: student.payment_status,
+        campus_id: student.campus_id,
         campus_name: campusName(student.campus_id),
+        guardian_name: student.guardian_name,
+        birthday: student.birthday,
         teacher_id: teacher.id,
         teacher_name: teacher.name,
         contract_no: contract.contract_no,
@@ -199,7 +203,8 @@ function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
         enrolled_at: student.enrolled_at,
         expires_at: student.expires_at,
         progress: contract.progress,
-        notes: student.notes
+        notes: student.notes,
+        attachment_url: contract.attachment_url
       };
     })
     .filter((item) => !status || item.status === status)
@@ -467,6 +472,36 @@ app.post('/admin/api/teachers', requireAdmin, (req, res) => {
   ok(res, teacher);
 });
 
+app.patch('/admin/api/teachers/:teacherId', requireAdmin, (req, res) => {
+  const teacher = (store.teachers || []).find((item) => item.id === req.params.teacherId);
+  if (!teacher) return fail(res, 404, '老师不存在');
+  const parsed = z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    campusId: z.string().optional(),
+    primaryCourse: z.string().optional(),
+    courses: z.string().optional(),
+    status: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '老师信息不完整');
+  const data = parsed.data;
+  if (data.campusId && !store.campuses.some((item) => item.id === data.campusId)) return fail(res, 404, '校区不存在');
+  if (data.name !== undefined) teacher.name = data.name;
+  if (data.phone !== undefined) teacher.phone = data.phone;
+  if (data.campusId !== undefined) teacher.campus_id = data.campusId;
+  if (data.primaryCourse !== undefined) teacher.primary_course = data.primaryCourse;
+  if (data.courses !== undefined) teacher.courses = splitList(data.courses || data.primaryCourse || teacher.primary_course);
+  if (data.status !== undefined) teacher.status = normalizeTeacherStatus(data.status);
+  const user = (store.users || []).find((item) => item.id === teacher.user_id);
+  if (user) {
+    user.name = teacher.name;
+    user.phone = teacher.phone || '';
+    user.status = teacher.status;
+  }
+  saveStore(store);
+  ok(res, teacher);
+});
+
 app.get('/admin/api/campuses', requireAdmin, (_req, res) => {
   ok(res, [...(store.campuses || [])].sort((a, b) => {
     const order = Number(a.display_order ?? 999) - Number(b.display_order ?? 999);
@@ -510,6 +545,41 @@ app.post('/admin/api/campuses', requireAdmin, (req, res) => {
     map_keyword: parsed.data.mapKeyword || parsed.data.address
   };
   upsertById(store.campuses, campus);
+  saveStore(store);
+  ok(res, campus);
+});
+
+app.patch('/admin/api/campuses/:campusId', requireAdmin, (req, res) => {
+  const campus = (store.campuses || []).find((item) => item.id === req.params.campusId);
+  if (!campus) return fail(res, 404, '校区不存在');
+  const parsed = z.object({
+    name: z.string().optional(),
+    shortName: z.string().optional(),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+    hours: z.string().optional(),
+    latitude: z.union([z.number(), z.string()]).optional(),
+    longitude: z.union([z.number(), z.string()]).optional(),
+    desc: z.string().optional(),
+    status: z.string().optional(),
+    displayOrder: z.union([z.number(), z.string()]).optional(),
+    contactPerson: z.string().optional(),
+    mapKeyword: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '校区信息不完整');
+  const data = parsed.data;
+  if (data.name !== undefined) campus.name = data.name;
+  if (data.shortName !== undefined) campus.short_name = data.shortName;
+  if (data.address !== undefined) campus.address = data.address;
+  if (data.phone !== undefined) campus.phone = data.phone;
+  if (data.hours !== undefined) campus.hours = data.hours;
+  if (data.latitude !== undefined) campus.latitude = data.latitude === '' ? null : Number(data.latitude);
+  if (data.longitude !== undefined) campus.longitude = data.longitude === '' ? null : Number(data.longitude);
+  if (data.desc !== undefined) campus.desc = data.desc;
+  if (data.status !== undefined) campus.status = ['active', 'inactive', 'planned'].includes(data.status) ? data.status : campus.status;
+  if (data.displayOrder !== undefined && data.displayOrder !== '') campus.display_order = Number(data.displayOrder);
+  if (data.contactPerson !== undefined) campus.contact_person = data.contactPerson;
+  if (data.mapKeyword !== undefined) campus.map_keyword = data.mapKeyword;
   saveStore(store);
   ok(res, campus);
 });
@@ -613,6 +683,81 @@ app.post('/admin/api/students', requireAdmin, (req, res) => {
   ok(res, adminStudentRows({}).find((item) => item.binding_id === bindingId));
 });
 
+app.patch('/admin/api/students/:studentId/bindings/:bindingId', requireAdmin, (req, res) => {
+  const student = (store.students || []).find((item) => item.id === req.params.studentId);
+  const binding = (store.bindings || []).find((item) => item.id === req.params.bindingId && item.student_id === req.params.studentId);
+  if (!student || !binding) return fail(res, 404, '学员或课程绑定不存在');
+  const contract = contractById(binding.contract_id);
+  if (!contract) return fail(res, 404, '合同不存在');
+  const parsed = z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    campusId: z.string().optional(),
+    teacherId: z.string().optional(),
+    course: z.string().optional(),
+    mode: z.enum(['fixed20', 'book']).optional(),
+    bookLevel: z.string().optional(),
+    totalLessons: z.union([z.number(), z.string()]).optional(),
+    completedLessons: z.union([z.number(), z.string()]).optional(),
+    enrolledAt: z.string().optional(),
+    expiresAt: z.string().optional(),
+    paymentStatus: z.string().optional(),
+    status: z.string().optional(),
+    progress: z.string().optional(),
+    notes: z.string().optional(),
+    attachmentUrl: z.string().optional(),
+    guardianName: z.string().optional(),
+    birthday: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '学员信息不完整');
+  const data = parsed.data;
+  if (data.campusId && !store.campuses.some((item) => item.id === data.campusId)) return fail(res, 404, '校区不存在');
+  if (data.teacherId && !store.teachers.some((item) => item.id === data.teacherId)) return fail(res, 404, '老师不存在');
+
+  if (data.name !== undefined) student.name = data.name;
+  if (data.phone !== undefined) student.phone = data.phone;
+  if (data.campusId !== undefined) student.campus_id = data.campusId;
+  if (data.enrolledAt !== undefined) student.enrolled_at = data.enrolledAt;
+  if (data.expiresAt !== undefined) student.expires_at = data.expiresAt;
+  if (data.paymentStatus !== undefined) student.payment_status = normalizePaymentStatus(data.paymentStatus);
+  if (data.status !== undefined) student.status = normalizeStudentStatus(data.status);
+  if (data.guardianName !== undefined) student.guardian_name = data.guardianName;
+  if (data.birthday !== undefined) student.birthday = data.birthday;
+  if (data.notes !== undefined) student.notes = data.notes;
+
+  if (data.campusId !== undefined) {
+    binding.campus_id = data.campusId;
+    contract.campus_id = data.campusId;
+  }
+  if (data.teacherId !== undefined) binding.teacher_id = data.teacherId;
+  if (data.course !== undefined) {
+    binding.course = data.course;
+    contract.course = data.course;
+  }
+  if (data.status !== undefined) {
+    const normalizedStatus = normalizeStudentStatus(data.status);
+    binding.status = normalizedStatus;
+    contract.status = normalizedStatus;
+  }
+  if (data.mode !== undefined) contract.mode = data.mode;
+  if (data.bookLevel !== undefined) contract.book_level = data.bookLevel;
+  if (data.totalLessons !== undefined) contract.total_lessons = contract.mode === 'book' || data.totalLessons === '' ? null : Number(data.totalLessons);
+  if (data.completedLessons !== undefined) contract.completed_lessons = Number(data.completedLessons || 0);
+  if (data.progress !== undefined) contract.progress = data.progress;
+  if (data.enrolledAt !== undefined) contract.signed_at = data.enrolledAt;
+  if (data.expiresAt !== undefined) contract.expires_at = data.expiresAt;
+  if (data.attachmentUrl !== undefined) contract.attachment_url = data.attachmentUrl;
+
+  const user = (store.users || []).find((item) => item.id === student.user_id);
+  if (user) {
+    user.name = student.name;
+    user.phone = student.phone || '';
+    user.status = student.status;
+  }
+  saveStore(store);
+  ok(res, adminStudentRows({}).find((item) => item.binding_id === binding.id));
+});
+
 app.get('/admin/api/access-users', requireAdmin, (_req, res) => {
   ok(res, accessRows());
 });
@@ -642,6 +787,34 @@ app.post('/admin/api/access-users', requireAdmin, (req, res) => {
   };
   store.accessUsers ||= [];
   upsertById(store.accessUsers, item);
+  saveStore(store);
+  ok(res, item);
+});
+
+app.patch('/admin/api/access-users/:accessId', requireAdmin, (req, res) => {
+  const item = (store.accessUsers || []).find((entry) => entry.id === req.params.accessId);
+  if (!item) return fail(res, 404, '访问权限不存在');
+  const parsed = z.object({
+    role: z.enum(['student', 'teacher']).optional(),
+    profileId: z.string().optional(),
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    status: z.string().optional(),
+    notes: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '访问权限信息不完整');
+  const role = parsed.data.role || item.role;
+  const profileId = parsed.data.profileId || item.profile_id;
+  const profile = role === 'teacher'
+    ? (store.teachers || []).find((entry) => entry.id === profileId)
+    : (store.students || []).find((entry) => entry.id === profileId);
+  if (!profile) return fail(res, 404, '关联档案不存在');
+  item.role = role;
+  item.profile_id = profileId;
+  if (parsed.data.name !== undefined) item.name = parsed.data.name || profile.name;
+  if (parsed.data.phone !== undefined) item.phone = parsed.data.phone;
+  if (parsed.data.status !== undefined) item.status = parsed.data.status === 'inactive' ? 'inactive' : 'active';
+  if (parsed.data.notes !== undefined) item.notes = parsed.data.notes;
   saveStore(store);
   ok(res, item);
 });

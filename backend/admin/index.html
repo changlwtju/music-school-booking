@@ -193,6 +193,7 @@
                 <th>剩余</th>
                 <th>到期</th>
                 <th>缴费</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody id="studentsBody"></tbody>
@@ -228,6 +229,7 @@
                 <th>可授课程</th>
                 <th>学员数</th>
                 <th>状态</th>
+                <th>操作</th>
               </tr>
             </thead>
           <tbody id="teachersBody"></tbody>
@@ -260,6 +262,7 @@
                 <th>校区</th>
                 <th>状态</th>
                 <th>备注</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody id="accessBody"></tbody>
@@ -298,6 +301,7 @@
                 <th>营业时间</th>
                 <th>状态</th>
                 <th>导航</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody id="campusesBody"></tbody>
@@ -451,6 +455,22 @@ sudo systemctl restart spinach-music-api</pre>
       </section>
     </section>
   </main>
+
+  <div id="editOverlay" class="modal-overlay hidden">
+    <section class="modal-panel">
+      <form id="editForm">
+        <div class="modal-head">
+          <h3 id="editTitle">编辑</h3>
+          <button id="editCloseBtn" type="button" class="ghost-btn">关闭</button>
+        </div>
+        <div id="editFields" class="modal-fields"></div>
+        <div class="modal-actions">
+          <button type="submit" class="secondary-btn">保存修改</button>
+          <p id="editMessage" class="form-message"></p>
+        </div>
+      </form>
+    </section>
+  </div>
 
   <script src="/admin/app.js"></script>
 </body>

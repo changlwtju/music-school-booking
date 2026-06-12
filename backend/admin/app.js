@@ -10,7 +10,8 @@ const state = {
   appointments: [],
   accessUsers: [],
   slots: [],
-  monthlyHours: []
+  monthlyHours: [],
+  editContext: null
 };
 
 const el = (id) => document.getElementById(id);
@@ -90,6 +91,14 @@ function addressStatusLabel(value) {
 
 function modeLabel(value) {
   return value === 'book' ? '按册学习' : '固定课时';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }
 
 function formJson(form) {
@@ -226,6 +235,7 @@ function renderAccessUsers() {
       <td>${item.campus_name || '-'}</td>
       <td><span class="tag">${item.status === 'inactive' ? '停用' : '允许访问'}</span></td>
       <td>${item.notes || '-'}</td>
+      <td><button type="button" class="link-btn" data-edit="access" data-id="${item.id}">编辑</button></td>
     </tr>
   `).join('');
 }
@@ -243,6 +253,7 @@ function renderStudents() {
       <td>${student.remaining_lessons ?? '按册'}</td>
       <td>${student.expires_at || '-'}</td>
       <td><span class="tag">${statusLabel(student.payment_status)}</span></td>
+      <td><button type="button" class="link-btn" data-edit="student" data-id="${student.binding_id}">编辑</button></td>
     </tr>
   `).join('');
 }
@@ -257,6 +268,7 @@ function renderTeachers() {
       <td>${(teacher.courses || []).join('、') || '-'}</td>
       <td>${teacher.student_count}</td>
       <td><span class="tag">${teacherStatusLabel(teacher.status)}</span></td>
+      <td><button type="button" class="link-btn" data-edit="teacher" data-id="${teacher.id}">编辑</button></td>
     </tr>
   `).join('');
 }
@@ -271,8 +283,120 @@ function renderCampuses() {
       <td>${campus.hours || '-'}</td>
       <td><span class="tag">${addressStatusLabel(campus.status || 'active')}</span></td>
       <td>${campus.latitude && campus.longitude ? `${campus.latitude}, ${campus.longitude}` : (campus.map_keyword || '-')}</td>
+      <td><button type="button" class="link-btn" data-edit="campus" data-id="${campus.id}">编辑</button></td>
     </tr>
   `).join('');
+}
+
+function inputField(name, label, value = '', type = 'text') {
+  return `
+    <label>
+      <span>${label}</span>
+      <input name="${name}" type="${type}" value="${escapeHtml(value)}" />
+    </label>
+  `;
+}
+
+function textAreaField(name, label, value = '') {
+  return `
+    <label class="span-2">
+      <span>${label}</span>
+      <textarea name="${name}" rows="2">${escapeHtml(value)}</textarea>
+    </label>
+  `;
+}
+
+function selectField(name, label, value, options) {
+  return `
+    <label>
+      <span>${label}</span>
+      <select name="${name}">
+        ${options.map((option) => `<option value="${escapeHtml(option.value)}" ${String(option.value) === String(value ?? '') ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('')}
+      </select>
+    </label>
+  `;
+}
+
+function openEditModal(type, item) {
+  state.editContext = { type, item };
+  el('editMessage').textContent = '';
+  const titleMap = {
+    student: `编辑学员：${item.name || ''}`,
+    teacher: `编辑老师：${item.name || ''}`,
+    access: `编辑访问权限：${item.name || item.profile_name || ''}`,
+    campus: `编辑门店：${item.name || ''}`
+  };
+  el('editTitle').textContent = titleMap[type] || '编辑';
+  const campusOptions = state.campuses.map((campus) => ({ value: campus.id, label: campus.name }));
+  const teacherOptions = state.teachers.map((teacher) => ({ value: teacher.id, label: `${teacher.name} · ${teacher.primary_course || ''}` }));
+  const courseOptions = state.courses.map((course) => ({ value: course.name, label: course.name }));
+  const fields = {
+    student: [
+      inputField('name', '姓名', item.name),
+      inputField('phone', '资料手机号', item.phone),
+      inputField('guardianName', '监护人', item.guardian_name),
+      inputField('birthday', '生日', item.birthday, 'date'),
+      selectField('campusId', '校区', item.campus_id, campusOptions),
+      selectField('teacherId', '绑定老师', item.teacher_id, teacherOptions),
+      selectField('course', '乐器项目', item.course, courseOptions),
+      selectField('mode', '课程类型', item.mode, [{ value: 'book', label: '按册学习' }, { value: 'fixed20', label: '固定课时' }]),
+      inputField('bookLevel', '按册级别', item.book_level),
+      inputField('totalLessons', '总课时', item.total_lessons ?? '', 'number'),
+      inputField('completedLessons', '已上课时', item.completed_lessons ?? 0, 'number'),
+      inputField('enrolledAt', '报名日期', item.enrolled_at, 'date'),
+      inputField('expiresAt', '到期日期', item.expires_at, 'date'),
+      selectField('paymentStatus', '缴费状态', item.payment_status, [{ value: 'pending', label: '待确认' }, { value: 'paid', label: '已付清' }, { value: 'installment', label: '分期' }, { value: 'trial', label: '体验课' }]),
+      selectField('status', '在读状态', item.status, [{ value: 'active', label: '在读' }, { value: 'expired', label: '已到期' }, { value: 'inactive', label: '停用' }, { value: 'trial', label: '体验课' }]),
+      inputField('progress', '当前进度', item.progress),
+      inputField('attachmentUrl', '合同附件 URL', item.attachment_url),
+      textAreaField('notes', '备注', item.notes)
+    ],
+    teacher: [
+      inputField('name', '姓名', item.name),
+      inputField('phone', '手机号', item.phone),
+      selectField('campusId', '校区', item.campus_id, campusOptions),
+      selectField('primaryCourse', '主授乐器', item.primary_course, courseOptions),
+      inputField('courses', '可授乐器', (item.courses || []).join('、')),
+      selectField('status', '状态', item.status, [{ value: 'active', label: '在职' }, { value: 'inactive', label: '停用' }])
+    ],
+    access: [
+      inputField('name', '显示姓名', item.name),
+      inputField('phone', '登录手机号', item.phone),
+      selectField('status', '访问状态', item.status, [{ value: 'active', label: '允许访问' }, { value: 'inactive', label: '停用' }]),
+      textAreaField('notes', '备注', item.notes)
+    ],
+    campus: [
+      inputField('name', '校区名称', item.name),
+      inputField('shortName', '校区简称', item.short_name),
+      inputField('address', '地址', item.address),
+      inputField('phone', '电话', item.phone),
+      inputField('hours', '营业时间', item.hours),
+      selectField('status', '状态', item.status || 'active', [{ value: 'active', label: '营业中' }, { value: 'planned', label: '筹备中' }, { value: 'inactive', label: '停用' }]),
+      inputField('displayOrder', '排序', item.display_order ?? '', 'number'),
+      inputField('latitude', '纬度', item.latitude ?? ''),
+      inputField('longitude', '经度', item.longitude ?? ''),
+      inputField('contactPerson', '联系人', item.contact_person),
+      inputField('mapKeyword', '地图关键词', item.map_keyword),
+      textAreaField('desc', '备注', item.desc)
+    ]
+  }[type] || [];
+  el('editFields').innerHTML = fields.join('');
+  el('editOverlay').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  state.editContext = null;
+  el('editOverlay').classList.add('hidden');
+  el('editFields').innerHTML = '';
+  el('editMessage').textContent = '';
+}
+
+function findEditable(type, id) {
+  if (type === 'student') return state.students.find((item) => item.binding_id === id);
+  if (type === 'teacher') return state.teachers.find((item) => item.id === id);
+  if (type === 'access') return state.accessUsers.find((item) => item.id === id);
+  if (type === 'campus') return state.campuses.find((item) => item.id === id);
+  return null;
 }
 
 function renderSelects() {
@@ -604,6 +728,43 @@ el('exportBtn').addEventListener('click', async () => {
     link.click();
     URL.revokeObjectURL(link.href);
     message.textContent = '导出文件已开始下载';
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-edit]');
+  if (!button) return;
+  const item = findEditable(button.dataset.edit, button.dataset.id);
+  if (item) openEditModal(button.dataset.edit, item);
+});
+
+el('editCloseBtn').addEventListener('click', closeEditModal);
+el('editOverlay').addEventListener('click', (event) => {
+  if (event.target === el('editOverlay')) closeEditModal();
+});
+
+el('editForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const context = state.editContext;
+  if (!context) return;
+  const message = el('editMessage');
+  message.textContent = '正在保存...';
+  const data = formJson(event.currentTarget);
+  try {
+    if (context.type === 'student') {
+      await api(`/admin/api/students/${context.item.student_id}/bindings/${context.item.binding_id}`, { method: 'PATCH', body: JSON.stringify(data) });
+    } else if (context.type === 'teacher') {
+      await api(`/admin/api/teachers/${context.item.id}`, { method: 'PATCH', body: JSON.stringify(data) });
+    } else if (context.type === 'access') {
+      await api(`/admin/api/access-users/${context.item.id}`, { method: 'PATCH', body: JSON.stringify(data) });
+    } else if (context.type === 'campus') {
+      await api(`/admin/api/campuses/${context.item.id}`, { method: 'PATCH', body: JSON.stringify(data) });
+    }
+    message.textContent = '已保存';
+    await loadAll();
+    closeEditModal();
   } catch (error) {
     message.textContent = error.message;
   }
