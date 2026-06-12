@@ -203,6 +203,7 @@ function renderTodayAppointments() {
 }
 
 function renderAppointments() {
+  if (!el('appointmentsBody')) return;
   const appointments = state.dashboard?.upcomingAppointments || [];
   el('appointmentsBody').innerHTML = appointments.map((item) => `
     <tr>
@@ -528,18 +529,16 @@ function setView(view) {
   });
   document.querySelectorAll('.view').forEach((node) => node.classList.add('hidden'));
   el(`${view}View`).classList.remove('hidden');
-  el('pageTitle').textContent = { dashboard: '总览', students: '学员', teachers: '老师', access: '访问权限', campuses: '地址管理', schedule: '课表', hours: '课时核对', maintenance: '数据维护' }[view];
+  el('pageTitle').textContent = { dashboard: '总览', students: '学员', teachers: '教务资料', access: '访问权限', schedule: '课表与课时', maintenance: '数据维护' }[view];
   el('pageSubtitle').textContent = {
     dashboard: '服务器运行数据',
     students: '按老师、状态和关键词筛选',
-    teachers: '老师资料和授课乐器',
+    teachers: '老师资料、授课乐器和门店地址',
     access: '控制谁可以进入学生端或老师端',
-    campuses: '门店地址、导航资料和后续新店预留',
-    schedule: '固定课节与临时不可约时段',
-    hours: '按自然月核对有效课时，再与钉钉考勤月报联动',
+    schedule: '约课处理、课表规则和月度课时核对',
     maintenance: '真实数据导入、备份、导出和恢复'
   }[view];
-  if (view === 'hours') loadMonthlyHours();
+  if (view === 'schedule') loadMonthlyHours();
 }
 
 async function loadDashboard() {
