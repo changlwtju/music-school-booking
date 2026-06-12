@@ -8,7 +8,7 @@ import express from 'express';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { buildSlots, canSelfChange, DEFAULT_SLOTS, isMonday, isReleased, remainingLessons } from './schedule.js';
-import { appointmentView, availabilityForDate, campusName, contractById, courseCatalog, saveStore, store, teacherName } from './store.js';
+import { appointmentView, availabilityForDate, campusName, contractById, courseCatalog, dbPath, saveStore, store, teacherName } from './store.js';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -67,6 +67,16 @@ function upsertById(list, item) {
   const existing = list.find((entry) => entry.id === item.id);
   if (existing) Object.assign(existing, item);
   else list.push(item);
+}
+
+function createDatabaseBackup() {
+  if (!fs.existsSync(dbPath)) return '';
+  const backupDir = path.join(path.dirname(dbPath), 'backups');
+  fs.mkdirSync(backupDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = path.join(backupDir, `spinach-music-${stamp}.json`);
+  fs.copyFileSync(dbPath, backupPath);
+  return backupPath;
 }
 
 function splitList(value) {
@@ -179,6 +189,7 @@ function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
         campus_name: campusName(student.campus_id),
         teacher_id: teacher.id,
         teacher_name: teacher.name,
+        contract_no: contract.contract_no,
         course: binding.course || contract.course,
         mode: contract.mode,
         book_level: contract.book_level,
@@ -384,6 +395,20 @@ app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
     recentSync,
     upcomingAppointments
   });
+});
+
+app.get('/admin/api/export', requireAdmin, (_req, res) => {
+  ok(res, {
+    exported_at: new Date().toISOString(),
+    database_path: dbPath,
+    store
+  });
+});
+
+app.post('/admin/api/backups', requireAdmin, (_req, res) => {
+  const backupPath = createDatabaseBackup();
+  if (!backupPath) return fail(res, 404, '当前数据库文件不存在，无法备份');
+  ok(res, { backup_path: backupPath });
 });
 
 app.get('/admin/api/students', requireAdmin, (req, res) => {

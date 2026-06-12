@@ -9,7 +9,8 @@ const state = {
   courses: [],
   appointments: [],
   accessUsers: [],
-  slots: []
+  slots: [],
+  monthlyHours: []
 };
 
 const el = (id) => document.getElementById(id);
@@ -236,6 +237,7 @@ function renderStudents() {
       <td>${student.phone || '-'}</td>
       <td>${student.teacher_name || '-'}</td>
       <td>${student.course || '-'}</td>
+      <td>${student.contract_no || '-'}</td>
       <td>${modeLabel(student.mode)}</td>
       <td>${student.completed_lessons ?? '-'}</td>
       <td>${student.remaining_lessons ?? '按册'}</td>
@@ -326,6 +328,19 @@ function renderSlots() {
   el('lockSlotCheckboxes').innerHTML = html;
 }
 
+function renderMonthlyHours() {
+  el('hoursBody').innerHTML = state.monthlyHours.map((item) => `
+    <tr>
+      <td>${item.teacher_name || '-'}</td>
+      <td>${el('hoursMonth').value || '-'}</td>
+      <td>${item.total_lessons || 0}</td>
+      <td>${item.valid_lessons || 0}</td>
+      <td>${item.invalid_lessons || 0}</td>
+      <td><span class="tag">${item.total_lessons ? '待与钉钉月报核对' : '暂无课程记录'}</span></td>
+    </tr>
+  `).join('');
+}
+
 function setView(view) {
   state.view = view;
   document.querySelectorAll('.nav-item').forEach((button) => {
@@ -333,15 +348,18 @@ function setView(view) {
   });
   document.querySelectorAll('.view').forEach((node) => node.classList.add('hidden'));
   el(`${view}View`).classList.remove('hidden');
-  el('pageTitle').textContent = { dashboard: '总览', students: '学员', teachers: '老师', access: '访问权限', campuses: '地址管理', schedule: '课表' }[view];
+  el('pageTitle').textContent = { dashboard: '总览', students: '学员', teachers: '老师', access: '访问权限', campuses: '地址管理', schedule: '课表', hours: '课时核对', maintenance: '数据维护' }[view];
   el('pageSubtitle').textContent = {
     dashboard: '服务器运行数据',
     students: '按老师、状态和关键词筛选',
     teachers: '老师资料和授课乐器',
     access: '控制谁可以进入学生端或老师端',
     campuses: '门店地址、导航资料和后续新店预留',
-    schedule: '固定课节与临时不可约时段'
+    schedule: '固定课节与临时不可约时段',
+    hours: '按自然月核对有效课时，再与钉钉考勤月报联动',
+    maintenance: '真实数据导入、备份、导出和恢复'
   }[view];
+  if (view === 'hours') loadMonthlyHours();
 }
 
 async function loadDashboard() {
@@ -403,6 +421,12 @@ async function loadStudents() {
   renderAccessProfileOptions();
 }
 
+async function loadMonthlyHours() {
+  if (!el('hoursMonth').value) el('hoursMonth').value = new Date().toISOString().slice(0, 7);
+  state.monthlyHours = await api(`/stats/teacher-monthly?month=${encodeURIComponent(el('hoursMonth').value)}`);
+  renderMonthlyHours();
+}
+
 async function loadAll() {
   await loadCourses();
   await loadCampuses();
@@ -450,6 +474,8 @@ el('studentStatus').addEventListener('change', loadStudents);
 el('appointmentDate').addEventListener('change', loadAppointments);
 el('appointmentTeacher').addEventListener('change', loadAppointments);
 el('appointmentStatus').addEventListener('change', loadAppointments);
+el('loadHoursBtn').addEventListener('click', loadMonthlyHours);
+el('hoursMonth').addEventListener('change', loadMonthlyHours);
 el('accessForm').elements.role.addEventListener('change', (event) => {
   const role = event.currentTarget.value;
   const options = [...el('accessProfile').options];
@@ -550,6 +576,34 @@ el('lockForm').addEventListener('submit', async (event) => {
     message.textContent = '已锁定所选时段，学生端将不可预约';
     await loadDashboard();
     await loadAppointments();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+el('backupBtn').addEventListener('click', async () => {
+  const message = el('backupMessage');
+  message.textContent = '正在备份...';
+  try {
+    const result = await api('/admin/api/backups', { method: 'POST' });
+    message.textContent = `备份已生成：${result.backup_path}`;
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+
+el('exportBtn').addEventListener('click', async () => {
+  const message = el('exportMessage');
+  message.textContent = '正在导出...';
+  try {
+    const result = await api('/admin/api/export');
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `spinach-music-export-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    message.textContent = '导出文件已开始下载';
   } catch (error) {
     message.textContent = error.message;
   }

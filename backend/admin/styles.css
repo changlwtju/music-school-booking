@@ -289,6 +289,26 @@ nav {
   margin-top: 0;
 }
 
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.command-box {
+  margin: 12px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f4f8f5;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .mini-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(100px, 1fr));
@@ -331,6 +351,11 @@ nav {
   grid-template-columns: minmax(220px, 1fr) 180px 140px;
   gap: 10px;
   margin-bottom: 14px;
+}
+
+.filters.two-cols {
+  grid-template-columns: 220px 120px;
+  justify-content: start;
 }
 
 .form-card {
@@ -484,6 +509,8 @@ tr:last-child td {
   .info-grid,
   .mini-stats,
   .filters,
+  .filters.two-cols,
+  .action-grid,
   .admin-form,
   .slot-grid {
     grid-template-columns: 1fr;

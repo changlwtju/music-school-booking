@@ -48,6 +48,8 @@
         <button class="nav-item" data-view="access">访问权限</button>
         <button class="nav-item" data-view="campuses">地址管理</button>
         <button class="nav-item" data-view="schedule">课表</button>
+        <button class="nav-item" data-view="hours">课时核对</button>
+        <button class="nav-item" data-view="maintenance">数据维护</button>
       </nav>
       <button id="logoutBtn" class="logout-btn">退出登录</button>
     </aside>
@@ -140,7 +142,7 @@
       </section>
 
       <section id="studentsView" class="view hidden">
-        <details class="form-card" open>
+        <details class="form-card">
           <summary>新增学员</summary>
           <form id="studentForm" class="admin-form">
             <label><span>姓名</span><input name="name" required /></label>
@@ -185,6 +187,7 @@
                 <th>电话</th>
                 <th>老师</th>
                 <th>课程</th>
+                <th>合同</th>
                 <th>类型</th>
                 <th>已上</th>
                 <th>剩余</th>
@@ -198,7 +201,7 @@
       </section>
 
       <section id="teachersView" class="view hidden">
-        <details class="form-card" open>
+        <details class="form-card">
           <summary>新增老师</summary>
           <form id="teacherForm" class="admin-form">
             <label><span>姓名</span><input name="name" required /></label>
@@ -233,7 +236,7 @@
       </section>
 
       <section id="accessView" class="view hidden">
-        <details class="form-card" open>
+        <details class="form-card">
           <summary>开通小程序访问</summary>
           <form id="accessForm" class="admin-form">
             <label><span>身份</span><select name="role" required><option value="student">学生端</option><option value="teacher">老师端</option></select></label>
@@ -265,7 +268,7 @@
       </section>
 
       <section id="campusesView" class="view hidden">
-        <details class="form-card" open>
+        <details class="form-card">
           <summary>新增门店地址</summary>
           <form id="campusForm" class="admin-form">
             <label><span>校区名称</span><input name="name" required /></label>
@@ -372,8 +375,78 @@
                 <th>状态</th>
               </tr>
             </thead>
-            <tbody id="appointmentSyncBody"></tbody>
+          <tbody id="appointmentSyncBody"></tbody>
           </table>
+        </div>
+      </section>
+
+      <section id="hoursView" class="view hidden">
+        <div class="info-grid">
+          <section class="info-panel">
+            <h3>钉钉联动口径</h3>
+            <p>小程序负责课程记录和有效课时，钉钉负责老师上下班考勤；每个自然月导出老师课时核对表，再与钉钉考勤月报交叉核对。</p>
+          </section>
+          <section class="info-panel">
+            <h3>异常处理</h3>
+            <p>课程记录缺失、课时与考勤不匹配、老师请假停课等情况先在后台核对，确认后再进入薪酬或考核流程。</p>
+          </section>
+        </div>
+        <h3>老师月度课时核对表</h3>
+        <div class="filters two-cols">
+          <input id="hoursMonth" type="month" />
+          <button id="loadHoursBtn" class="secondary-btn">查询</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>老师</th>
+                <th>月份</th>
+                <th>完成课节</th>
+                <th>有效课时</th>
+                <th>异常/缺失</th>
+                <th>钉钉核对</th>
+              </tr>
+            </thead>
+            <tbody id="hoursBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="maintenanceView" class="view hidden">
+        <div class="info-grid">
+          <section class="info-panel">
+            <h3>真实数据导入</h3>
+            <p>正式导入仍建议在服务器命令行执行，导入脚本会先生成备份，避免 Excel 误填后直接覆盖线上数据。</p>
+            <pre class="command-box">cd /home/ubuntu/music-school-booking/backend
+DATABASE_PATH=/var/lib/spinach-music/spinach-music.json npm run import:music-school -- --replace
+sudo systemctl restart spinach-music-api</pre>
+          </section>
+          <section class="info-panel">
+            <h3>巡检账号</h3>
+            <p>小程序前端不设管理员入口。使用同一个手机号 13800000010，可分别进入学员端和老师端做上线巡检。</p>
+          </section>
+        </div>
+        <div class="action-grid">
+          <section class="info-panel">
+            <h3>备份当前数据库</h3>
+            <p>生成服务器本地 JSON 备份，适合每次批量导入、批量修改前执行。</p>
+            <button id="backupBtn" class="secondary-btn">立即备份</button>
+            <p id="backupMessage" class="form-message"></p>
+          </section>
+          <section class="info-panel">
+            <h3>导出当前数据</h3>
+            <p>下载当前数据库快照，便于本地留档、人工检查或发给开发继续排查。</p>
+            <button id="exportBtn" class="secondary-btn">下载 JSON</button>
+            <p id="exportMessage" class="form-message"></p>
+          </section>
+          <section class="info-panel">
+            <h3>恢复数据</h3>
+            <p>恢复会覆盖正式库，暂不放浏览器按钮。需要恢复时请在服务器执行：</p>
+            <pre class="command-box">cd /home/ubuntu/music-school-booking/backend
+DATABASE_PATH=/var/lib/spinach-music/spinach-music.json npm run restore -- /var/lib/spinach-music/backups/备份文件.json
+sudo systemctl restart spinach-music-api</pre>
+          </section>
         </div>
       </section>
     </section>
