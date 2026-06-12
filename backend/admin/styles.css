@@ -176,11 +176,16 @@ p {
 }
 
 .sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
   background: #1F3D32;
   color: #e8f2ea;
   padding: 20px 14px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .sidebar-brand {
@@ -211,6 +216,8 @@ p {
 nav {
   display: grid;
   gap: 6px;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .nav-item,
@@ -597,11 +604,16 @@ tr:last-child td {
   }
 
   .sidebar {
+    position: static;
+    height: auto;
     min-height: auto;
+    overflow: visible;
   }
 
   nav {
     grid-template-columns: repeat(3, 1fr);
+    overflow: visible;
+    padding-right: 0;
   }
 
   .logout-btn {
