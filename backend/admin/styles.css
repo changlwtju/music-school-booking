@@ -113,6 +113,16 @@ p {
   font-size: 14px;
 }
 
+.login-form .remember-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remember-row input {
+  width: auto;
+}
+
 .login-form input,
 .filters input,
 .filters select,

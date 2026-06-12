@@ -1,4 +1,5 @@
 const tokenKey = 'spinach-admin-token';
+const rememberedLoginKey = 'spinach-admin-remembered-login';
 const state = {
   token: localStorage.getItem(tokenKey) || '',
   view: 'dashboard',
@@ -79,6 +80,11 @@ function appointmentStatusLabel(value) {
 
 function roleLabel(value) {
   return value === 'teacher' ? '老师端' : '学生端';
+}
+
+function appointmentSourceLabel(item) {
+  if (item.lesson_type === 'trial') return '体验课';
+  return item.created_by === 'admin' ? '后台创建' : '学生端预约';
 }
 
 function addressStatusLabel(value) {
@@ -189,7 +195,7 @@ function renderTodayAppointments() {
       <td>${item.student_name || '-'}</td>
       <td>${item.teacher_name || '-'}</td>
       <td>${item.course || '-'}</td>
-      <td>${item.created_by === 'admin' ? '后台创建' : '学生端预约'}</td>
+      <td>${appointmentSourceLabel(item)}</td>
       <td><span class="tag">${appointmentStatusLabel(item.status)}</span></td>
     </tr>
   `).join('');
@@ -218,7 +224,7 @@ function renderAppointmentSync() {
       <td>${item.student_name || '-'}</td>
       <td>${item.teacher_name || '-'}</td>
       <td>${item.course || '-'}</td>
-      <td>${item.sync_source || '-'}</td>
+      <td>${appointmentSourceLabel(item) || item.sync_source || '-'}</td>
       <td><span class="tag">${item.synced_to_teacher ? '已同步' : '未绑定'}</span></td>
       <td><span class="tag">${appointmentStatusLabel(item.status)}</span></td>
     </tr>
@@ -464,6 +470,7 @@ function renderSlots() {
   `).join('');
   el('fixedSlotCheckboxes').innerHTML = html;
   el('lockSlotCheckboxes').innerHTML = html;
+  el('trialStartTime').innerHTML = state.slots.map((slot) => `<option value="${slot.startTime}">${slot.startTime}-${slot.endTime}</option>`).join('');
 }
 
 function renderMonthlyHours() {
@@ -589,6 +596,14 @@ el('loginForm').addEventListener('submit', async (event) => {
     });
     state.token = result.token;
     localStorage.setItem(tokenKey, state.token);
+    if (el('rememberPassword').checked) {
+      localStorage.setItem(rememberedLoginKey, JSON.stringify({
+        username: el('username').value.trim(),
+        password: el('password').value
+      }));
+    } else {
+      localStorage.removeItem(rememberedLoginKey);
+    }
     showApp();
     await loadAll();
   } catch (error) {
@@ -619,6 +634,21 @@ el('accessForm').elements.role.addEventListener('change', (event) => {
   const options = [...el('accessProfile').options];
   const matched = options.find((option) => option.dataset.role === role);
   if (matched) el('accessProfile').value = matched.value;
+});
+
+el('trialForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const message = el('trialFormMessage');
+  try {
+    const result = await api('/admin/api/trial-appointments', { method: 'POST', body: JSON.stringify(formJson(event.currentTarget)) });
+    message.textContent = `体验课已同步到老师课表：${result.date} ${result.start_time}-${result.end_time}`;
+    event.currentTarget.reset();
+    await loadDashboard();
+    await loadAppointments();
+    await loadStudents();
+  } catch (error) {
+    message.textContent = error.message;
+  }
 });
 
 el('studentForm').addEventListener('submit', async (event) => {
@@ -795,6 +825,17 @@ document.querySelectorAll('.nav-item').forEach((button) => {
 });
 
 (async function boot() {
+  let remembered = null;
+  try {
+    remembered = JSON.parse(localStorage.getItem(rememberedLoginKey) || 'null');
+  } catch {
+    localStorage.removeItem(rememberedLoginKey);
+  }
+  if (remembered?.username && remembered?.password) {
+    el('username').value = remembered.username;
+    el('password').value = remembered.password;
+    el('rememberPassword').checked = true;
+  }
   if (!state.token) {
     showLogin();
     return;
