@@ -532,7 +532,7 @@ export function mockRequest(path, options = {}) {
       rules: {
         openHours: `${teacherById(teacherId).name || '老师'} ${date} 12:00-20:00`,
         release: '次日课表前一天 20:00 后释放',
-        selfChange: '距离开课不足 1.5 小时不可自助改课',
+        selfChange: '已预约课程须在开课前至少 1.5 小时取消，逾时无法自助取消',
         availability: '老师默认周二至周日 12:00-20:00 全时段可约，后台仅维护请假或不可约例外'
       },
       slots: buildSlots({ teacherId, date })

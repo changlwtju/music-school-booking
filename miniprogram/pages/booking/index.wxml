@@ -6,9 +6,9 @@
     </view>
   </view>
   <view wx:if="{{activeCourse.id}}" class="card course-summary">
-    <view class="row">
+    <view class="compact-card-head">
       <view class="card-title">{{activeCourse.course}}</view>
-      <view class="pill light">{{activeCourse.teacher_name}}</view>
+      <view class="micro-badge">{{activeCourse.teacher_name}}</view>
     </view>
     <view class="meta" wx:if="{{activeCourse.mode === 'fixed20'}}">20 课时制 · 已完成 {{activeCourse.completed_lessons}} / {{activeCourse.total_lessons}}</view>
     <view class="meta" wx:else>按册学习 · {{activeCourse.book_level}}</view>

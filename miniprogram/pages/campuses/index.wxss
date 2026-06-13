@@ -2,8 +2,16 @@
   padding: 22rpx;
 }
 
-.campus-card .pill {
-  max-width: 44%;
+.campus-title {
+  color: #1F3D32;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.campus-hours {
+  color: #3E6654;
 }
 
 .map-btn {

@@ -22,7 +22,7 @@ Page({
     activeCourse: {},
     activeDate: studentBookingDate(),
     activeDateLabel: studentBookingDateLabel(),
-    rules: { openHours: '授课时间 12:00-20:00', release: '次日课表前一天 20:00 后释放', selfChange: '距离开课不足 1.5 小时不可自助改课' },
+    rules: { openHours: '授课时间 12:00-20:00', release: '次日课表前一天 20:00 后释放', selfChange: '已预约课程须在开课前至少 1.5 小时取消，逾时无法自助取消' },
     slots: [],
     bookingNotice: '',
     syncedAppointment: null

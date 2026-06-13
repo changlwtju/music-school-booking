@@ -2,7 +2,7 @@
   <view class="section-title">上课记录</view>
   <block wx:for="{{records}}" wx:key="id">
     <view class="card">
-      <view class="row"><view class="card-title">{{item.course}}</view><view class="pill light">{{item.billableText}}</view></view>
+      <view class="compact-card-head"><view class="card-title">{{item.course}}</view><view class="micro-badge">{{item.billableText}}</view></view>
       <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.teacher_name}}</view>
       <view class="meta">内容：{{item.content}}</view>
       <view class="meta">进度：{{item.progress}}</view>

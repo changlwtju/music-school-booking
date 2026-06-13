@@ -8,15 +8,15 @@
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />
   <view wx:if="{{isInspector}}" class="inspector-switch">
-    <view>
+    <view class="inspector-copy">
       <view class="inspector-title">巡检学生档案</view>
-      <view class="meta">仅开发巡检可见，可切换任意学生视角</view>
+      <view class="inspector-desc">开发巡检专用，可切换任意学生视角</view>
     </view>
     <picker mode="selector" range="{{inspectorLabels}}" value="{{activeInspectorIndex}}" bindchange="switchInspectorProfile">
       <view class="inspector-picker">{{inspectorLabels[activeInspectorIndex] || '选择学生档案'}}</view>
     </picker>
   </view>
-  <view class="notice">授课时间 12:00-20:00；每节课 45 分钟；周一全店休息；17:15-17:45 为晚餐休息；次日课表前一天 20:00 后释放；距离开课不足 1.5 小时请联系老师处理。</view>
+  <view class="notice">授课时间 12:00-20:00；每节课 45 分钟；周一全店休息；17:15-17:45 为晚餐休息；次日课表前一天 20:00 后释放；已预约课程须在开课前至少 1.5 小时取消，逾时无法自助取消。</view>
 
   <view class="section-title">学生服务</view>
   <view class="grid">
@@ -31,9 +31,9 @@
     <view class="card appointment-card">
       <image class="appointment-icon" src="/assets/icons/calendar.svg" mode="aspectFit" />
       <view class="appointment-content">
-        <view class="card-header">
+        <view class="compact-card-head">
           <view class="card-title">{{item.course}} · {{item.teacher_name}}</view>
-          <view class="pill light">{{item.statusText}}</view>
+          <view class="micro-badge">{{item.statusText}}</view>
         </view>
         <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.campus_name}}</view>
       </view>

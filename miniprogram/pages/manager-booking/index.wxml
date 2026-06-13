@@ -7,7 +7,7 @@
     </view>
   </view>
 
-  <view class="notice">管理员操作不受学生端课表释放时间和开课前 1.5 小时限制，操作结果会立即同步到老师课表。</view>
+  <view class="notice">管理员可代学生预约或取消课程，不受学生端课表释放时间及“开课前至少 1.5 小时取消”规则限制；操作结果会立即同步到老师课表。</view>
 
   <view class="section-title">代学生约课</view>
   <view class="card manager-form">
@@ -37,10 +37,12 @@
   <view class="section-title">近期预约</view>
   <view wx:for="{{appointments}}" wx:key="id" class="card appointment">
     <view class="appointment-main">
-      <view class="card-title">{{item.student_name}} · {{item.course}}</view>
+      <view class="compact-card-head">
+        <view class="card-title">{{item.student_name}} · {{item.course}}</view>
+        <button class="micro-action danger" data-item="{{item}}" bindtap="cancel">取消</button>
+      </view>
       <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.teacher_name}}</view>
     </view>
-    <button class="cancel-btn" data-item="{{item}}" bindtap="cancel">取消</button>
   </view>
   <view wx:if="{{!appointments.length}}" class="empty">当前没有待上课预约</view>
 </view>

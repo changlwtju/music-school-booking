@@ -2,7 +2,7 @@
   <view class="section-title">我的合同</view>
   <block wx:for="{{contracts}}" wx:key="id">
     <view class="card">
-      <view class="row"><view class="card-title">{{item.course}}</view><view class="pill">{{item.statusText}}</view></view>
+      <view class="compact-card-head"><view class="card-title">{{item.course}}</view><view class="micro-badge">{{item.statusText}}</view></view>
       <view class="meta">合同编号：{{item.contract_no}}</view>
       <view class="meta">签约日期：{{item.signed_at}}</view>
       <view class="meta">学习模式：{{item.modeText}}</view>

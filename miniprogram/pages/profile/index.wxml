@@ -16,7 +16,7 @@
   <view class="section-title">当前学习课程</view>
   <block wx:for="{{summary.contracts}}" wx:key="id">
     <view class="card">
-      <view class="row"><view class="card-title">{{item.course}}</view><view class="pill light">{{item.statusText}}</view></view>
+      <view class="compact-card-head"><view class="card-title">{{item.course}}</view><view class="micro-badge">{{item.statusText}}</view></view>
       <view class="meta">负责老师：{{item.teacherName}}</view>
       <view class="meta">学习模式：{{item.modeText}}</view>
       <view class="meta">进度：{{item.progress}}</view>
@@ -26,7 +26,7 @@
   </block>
   <view class="section-title">最近上课内容</view>
   <view wx:if="{{summary.latestRecord}}" class="card">
-    <view class="row"><view class="card-title">{{summary.latestRecord.course}}</view><view class="pill light">{{summary.latestRecord.teacher_name}}</view></view>
+    <view class="compact-card-head"><view class="card-title">{{summary.latestRecord.course}}</view><view class="micro-badge">{{summary.latestRecord.teacher_name}}</view></view>
     <view class="meta">{{summary.latestRecord.date}} {{summary.latestRecord.start_time}}-{{summary.latestRecord.end_time}}</view>
     <view class="meta">内容：{{summary.latestRecord.content}}</view>
     <view class="meta">作业：{{summary.latestRecord.homework}}</view>

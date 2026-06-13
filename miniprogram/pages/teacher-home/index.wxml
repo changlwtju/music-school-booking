@@ -8,9 +8,9 @@
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />
   <view wx:if="{{isInspector}}" class="inspector-switch">
-    <view>
+    <view class="inspector-copy">
       <view class="inspector-title">巡检老师档案</view>
-      <view class="meta">仅开发巡检可见，可切换任意老师视角</view>
+      <view class="inspector-desc">开发巡检专用，可切换任意老师视角</view>
     </view>
     <picker mode="selector" range="{{inspectorLabels}}" value="{{activeInspectorIndex}}" bindchange="switchInspectorProfile">
       <view class="inspector-picker">{{inspectorLabels[activeInspectorIndex] || '选择老师档案'}}</view>

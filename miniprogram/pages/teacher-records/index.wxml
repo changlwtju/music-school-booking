@@ -3,9 +3,9 @@
   <view class="section-title">已录入记录</view>
   <block wx:for="{{records}}" wx:key="id">
     <view class="card">
-      <view class="row">
+      <view class="compact-card-head">
         <view class="card-title">{{item.student_name}} · {{item.course}}</view>
-        <view class="pill light">{{item.billableText}}</view>
+        <view class="micro-badge">{{item.billableText}}</view>
       </view>
       <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.campus_name}}</view>
       <view class="meta">内容：{{item.content}}</view>

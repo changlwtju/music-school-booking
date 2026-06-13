@@ -1,6 +1,6 @@
 page {
   min-height: 100%;
-  background: #F7F4EE;
+  background: #F6F4EF;
   color: #1F3D32;
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
   letter-spacing: 0;
@@ -17,7 +17,7 @@ textarea {
 .page {
   min-height: 100vh;
   padding: 20rpx 24rpx 40rpx;
-  background: #F7F4EE;
+  background: #F6F4EF;
 }
 
 .topbar {
@@ -80,9 +80,9 @@ textarea {
 .card,
 .list-item,
 .notice {
-  border: 2rpx solid rgba(83, 157, 115, 0.18);
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8rpx;
+  border: 2rpx solid rgba(70, 123, 91, 0.14);
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 14rpx;
 }
 
 .entry {
@@ -122,6 +122,7 @@ textarea {
 .card {
   padding: 20rpx;
   margin-bottom: 14rpx;
+  box-shadow: 0 5rpx 16rpx rgba(31, 61, 50, 0.035);
 }
 
 .notice {
@@ -134,14 +135,18 @@ textarea {
 
 .inspector-switch {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18rpx;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14rpx;
   margin-bottom: 20rpx;
   padding: 20rpx 22rpx;
   border: 2rpx solid rgba(42, 103, 144, 0.22);
-  border-radius: 8rpx;
+  border-radius: 14rpx;
   background: rgba(246, 251, 252, 0.96);
+}
+
+.inspector-copy {
+  min-width: 0;
 }
 
 .inspector-title {
@@ -150,11 +155,22 @@ textarea {
   font-weight: 700;
 }
 
+.inspector-desc {
+  margin-top: 4rpx;
+  color: #5F7569;
+  font-size: 22rpx;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .inspector-picker {
-  min-width: 260rpx;
-  max-width: 360rpx;
-  padding: 14rpx 18rpx;
-  border-radius: 8rpx;
+  width: 100%;
+  min-height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10rpx 18rpx;
+  border-radius: 10rpx;
   background: #2A6790;
   color: #fff;
   font-size: 24rpx;
@@ -292,26 +308,59 @@ textarea {
 
 .pill {
   flex: 0 0 auto;
-  max-width: 52%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 92rpx;
-  min-height: 42rpx;
-  padding: 6rpx 14rpx;
+  min-width: 84rpx;
+  min-height: 40rpx;
+  padding: 4rpx 13rpx;
   border-radius: 999rpx;
   color: #FFFFFF;
   background: #539D73;
-  font-size: 22rpx;
-  line-height: 1.25;
+  font-size: 21rpx;
+  font-weight: 600;
+  line-height: 1.2;
   text-align: center;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  white-space: nowrap;
 }
 
 .pill.light {
   color: #1F3D32;
-  background: rgba(83, 157, 115, 0.16);
+  background: rgba(83, 157, 115, 0.12);
+}
+
+.micro-badge,
+.micro-action {
+  flex: 0 0 auto;
+  min-width: 84rpx;
+  min-height: 42rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid rgba(70, 123, 91, 0.14);
+  color: #315747;
+  background: #EDF5F0;
+  font-size: 21rpx;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.micro-action {
+  width: auto !important;
+  margin: 0;
+}
+
+.micro-action::after {
+  border: 0;
+}
+
+.micro-action.danger {
+  border-color: rgba(181, 71, 60, 0.14);
+  color: #A84238;
+  background: #FAEFED;
 }
 
 .btn {
@@ -458,6 +507,19 @@ textarea {
 }
 
 .card-header .card-title {
+  min-width: 0;
+  flex: 1;
+}
+
+.compact-card-head {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.compact-card-head .card-title {
   min-width: 0;
   flex: 1;
 }

@@ -8,7 +8,7 @@
   </view>
   <block wx:for="{{members}}" wx:key="id">
     <view class="card">
-      <view class="row"><view class="card-title {{item.payment_status === 'installment' ? 'installment' : ''}}">{{item.name}}</view><view class="pill light">{{item.course}}</view></view>
+      <view class="compact-card-head"><view class="card-title {{item.payment_status === 'installment' ? 'installment' : ''}}">{{item.name}}</view><view class="micro-badge">{{item.course}}</view></view>
       <view class="meta">{{item.phone}} · {{item.campus_name}}</view>
       <view class="meta">报名 {{item.enrolled_at}} · 到期 {{item.expiresText}}</view>
       <view class="meta">进度 {{item.progressText}}</view>

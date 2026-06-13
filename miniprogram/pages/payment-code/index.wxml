@@ -5,6 +5,6 @@
     <image class="logo big" src="{{payment.image}}" mode="aspectFill" />
     <view class="card-title">{{payment.title}}</view>
     <view class="meta">{{payment.payee}}</view>
-    <view class="pill light">{{payment.enabled ? '已启用' : '待配置'}}</view>
+    <view class="micro-badge">{{payment.enabled ? '已启用' : '待配置'}}</view>
   </view>
 </view>

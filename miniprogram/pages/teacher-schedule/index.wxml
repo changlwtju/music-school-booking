@@ -25,7 +25,7 @@
   <view class="section-title">{{schedule.date}} 课程</view>
   <block wx:for="{{schedule.appointments}}" wx:key="id">
     <view class="card {{item.isSynced ? 'synced-card' : ''}}" data-id="{{item.id}}" bindlongpress="editRecord">
-      <view class="row"><view class="card-title">{{item.start_time}} {{item.student_name}}</view><view class="pill">{{item.course}}</view></view>
+      <view class="compact-card-head"><view class="card-title">{{item.start_time}} {{item.student_name}}</view><view class="micro-badge">{{item.course}}</view></view>
       <view class="meta">{{item.campus_name}} · {{item.modeText}} · {{item.statusText}}</view>
       <view class="lesson-line">进度：{{item.progressText}}</view>
       <view wx:if="{{item.lessonNote}}" class="lesson-line">重点：{{item.lessonNote}}</view>

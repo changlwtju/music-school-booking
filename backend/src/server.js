@@ -1620,7 +1620,7 @@ app.get('/schedule/slots', requireStudent, (req, res) => {
     rules: {
       openHours: '授课时间 12:00-20:00',
       release: '次日课表前一天 20:00 后释放',
-      selfChange: '距离开课不足 1.5 小时不可自助改课',
+      selfChange: '已预约课程须在开课前至少 1.5 小时取消，逾时无法自助取消',
       availability: '老师默认周二至周日 12:00-20:00 全时段可约，后台仅维护请假或不可约例外'
     },
     slots: buildSlots({ date, appointments, contract, availability })
@@ -1773,7 +1773,7 @@ app.post('/appointments/:appointmentId/cancel', requireStudent, (req, res) => {
   if (appointment.student_id !== req.mobileProfile.id) return fail(res, 403, '无权取消其他学员预约');
   if (appointment.status !== 'booked') return fail(res, 409, '当前预约不可取消');
   if (!canSelfChange(appointment.date, appointment.start_time)) {
-    return fail(res, 409, '距离开课不足 1.5 小时，请联系老师处理');
+    return fail(res, 409, '已超过自助取消时限；课程须在开课前至少 1.5 小时取消');
   }
   appointment.status = 'cancelled';
   appointment.cancel_reason = req.body?.reason || '学生自助取消';

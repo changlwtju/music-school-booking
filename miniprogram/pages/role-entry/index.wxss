@@ -70,6 +70,7 @@
   color: #5F7569;
   font-size: 24rpx;
   line-height: 1.45;
+  white-space: nowrap;
 }
 
 .role-arrow {

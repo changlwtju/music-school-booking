@@ -3,9 +3,10 @@
   <view class="section-title">校区地址</view>
   <block wx:for="{{campuses}}" wx:key="id">
     <view class="card campus-card">
-      <view class="card-header">
-        <view class="card-title">{{item.name}}</view>
-        <view class="pill light">{{item.hours}}</view>
+      <view class="campus-title">{{item.name}}</view>
+      <view class="info-line campus-hours">
+        <image class="icon" src="/assets/icons/clock.svg" mode="aspectFit" />
+        <view class="info-text">{{item.hours}}</view>
       </view>
       <view class="info-line">
         <image class="icon" src="/assets/icons/location.svg" mode="aspectFit" />
