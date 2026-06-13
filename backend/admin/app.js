@@ -87,14 +87,14 @@ function roleLabel(value) {
   return {
     student: '学生端',
     teacher: '老师端',
-    manager: '管理者端'
+    manager: '管理员端'
   }[value] || value || '-';
 }
 
 function appointmentSourceLabel(item) {
   if (item.lesson_type === 'trial') return '体验课';
   if (item.created_by === 'admin') return '后台创建';
-  if (String(item.created_by || '').startsWith('manager:')) return '管理者端代约';
+  if (String(item.created_by || '').startsWith('manager:')) return '管理员端代约';
   return '学生端预约';
 }
 

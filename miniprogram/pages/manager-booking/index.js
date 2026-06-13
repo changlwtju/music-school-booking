@@ -21,11 +21,11 @@ Page({
   async onLoad() {
     const app = getApp();
     if (!app.globalData.authToken) {
-      wx.showToast({ title: '请先登录管理者端', icon: 'none' });
+      wx.showToast({ title: '请先登录管理员端', icon: 'none' });
       wx.navigateBack();
       return;
     }
-    this.setData({ managerName: app.globalData.manager?.name || '管理者' });
+    this.setData({ managerName: app.globalData.manager?.name || '管理员' });
     await this.loadStudents();
     await this.loadAppointments();
   },

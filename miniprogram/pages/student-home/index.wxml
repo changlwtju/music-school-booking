@@ -2,8 +2,8 @@
   <view class="topbar">
     <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
     <view>
-      <view class="brand-title">{{summary.student.name || '菠菜现代音乐'}}</view>
-      <view class="brand-subtitle">{{summary.student.campus_name || '钢琴 · 吉他 · 电吉他'}}</view>
+      <view class="brand-title">{{isInspector ? '学生端巡检' : (summary.student.name || '菠菜现代音乐')}}</view>
+      <view class="brand-subtitle">{{isInspector ? '当前视角：' + summary.student.name + ' · ' : ''}}{{summary.student.campus_name || '钢琴 · 吉他 · 电吉他'}}</view>
     </view>
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />
@@ -28,9 +28,15 @@
 
   <view class="section-title">近期预约</view>
   <block wx:for="{{summary.nextAppointments}}" wx:key="id">
-    <view class="card">
-      <view class="row"><view class="card-title">{{item.course}}</view><view class="pill">{{item.statusText}}</view></view>
-      <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.teacher_name}} · {{item.campus_name}}</view>
+    <view class="card appointment-card">
+      <image class="appointment-icon" src="/assets/icons/calendar.svg" mode="aspectFit" />
+      <view class="appointment-content">
+        <view class="card-header">
+          <view class="card-title">{{item.course}} · {{item.teacher_name}}</view>
+          <view class="pill light">{{item.statusText}}</view>
+        </view>
+        <view class="meta">{{item.date}} {{item.start_time}}-{{item.end_time}} · {{item.campus_name}}</view>
+      </view>
     </view>
   </block>
   <view wx:if="{{!summary.nextAppointments.length}}" class="empty">暂无近期预约</view>

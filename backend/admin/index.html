@@ -294,7 +294,7 @@
         <details class="form-card">
           <summary>开通小程序访问</summary>
           <form id="accessForm" class="admin-form">
-            <label><span>身份</span><select name="role" required><option value="student">学生端</option><option value="teacher">老师端</option><option value="manager">管理者端</option></select></label>
+            <label><span>身份</span><select name="role" required><option value="student">学生端</option><option value="teacher">老师端</option><option value="manager">管理员端</option></select></label>
             <label><span>关联档案</span><select name="profileId" id="accessProfile"></select></label>
             <label><span>显示姓名</span><input name="name" /></label>
             <label><span>登录手机号</span><input name="phone" required /></label>
@@ -508,7 +508,7 @@ sudo systemctl restart spinach-music-api</pre>
           </section>
           <section class="info-panel">
             <h3>巡检账号</h3>
-            <p>小程序前端不设管理员入口。使用同一个手机号 13800000010，可分别进入学员端和老师端做上线巡检。</p>
+            <p>开发调试使用独立的开发巡检身份，可分别进入学生端和老师端切换业务档案；巡检账号不等同于所查看的老师或学生。管理员端使用独立角色授权。</p>
           </section>
         </div>
         <div class="action-grid">

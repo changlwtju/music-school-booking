@@ -14,7 +14,7 @@
   <view class="section-title">选择身份</view>
   <view class="role-list">
     <view class="role-card student" bindtap="enterStudent">
-      <image class="role-icon" src="/assets/icons/role-student.png" mode="aspectFit" />
+      <view class="role-icon-wrap student-icon"><image class="role-icon" src="/assets/icons/role-student.svg" mode="aspectFit" /></view>
       <view class="role-copy">
         <view class="role-title">学生端</view>
         <view class="role-desc">约课、校区地址、我的信息、合同与上课记录</view>
@@ -23,7 +23,7 @@
     </view>
 
     <view class="role-card teacher" bindtap="enterTeacher">
-      <image class="role-icon" src="/assets/icons/role-teacher.png" mode="aspectFit" />
+      <view class="role-icon-wrap teacher-icon"><image class="role-icon" src="/assets/icons/role-teacher.svg" mode="aspectFit" /></view>
       <view class="role-copy">
         <view class="role-title">老师端</view>
         <view class="role-desc">今日课表、会员管理、上课记录、门店地图、收款码</view>
@@ -32,9 +32,9 @@
     </view>
 
     <view class="role-card manager" bindtap="enterManager">
-      <image class="role-icon" src="/assets/icons/entry-members.png" mode="aspectFit" />
+      <view class="role-icon-wrap manager-icon"><image class="role-icon" src="/assets/icons/role-admin.svg" mode="aspectFit" /></view>
       <view class="role-copy">
-        <view class="role-title">管理者端</view>
+        <view class="role-title">管理员端</view>
         <view class="role-desc">手机代学生约课、查看近期预约并处理取消</view>
       </view>
       <view class="role-arrow">›</view>

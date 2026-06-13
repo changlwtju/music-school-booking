@@ -439,12 +439,12 @@ export function mockRequest(path, options = {}) {
     const role = options.data?.role === 'teacher' ? 'teacher' : 'student';
     if (role === 'teacher') {
       return Promise.resolve({
-        user: { id: 'user-inspector', role: 'teacher', name: '前端巡检', phone: '13800000010', status: 'active' },
+        user: { id: 'user-inspector', role: 'teacher', name: '开发巡检', phone: '18222288952', status: 'active' },
         profile: teachers[0]
       });
     }
     return Promise.resolve({
-      user: { id: 'user-inspector', role: 'student', name: '前端巡检', phone: '13800000010', status: 'active' },
+      user: { id: 'user-inspector', role: 'student', name: '开发巡检', phone: '18222288952', status: 'active' },
       profile: students[0]
     });
   }
@@ -452,10 +452,10 @@ export function mockRequest(path, options = {}) {
   if (pathname === '/auth/role-login' && options.method === 'POST') {
     const role = options.data?.role === 'teacher' ? 'teacher' : 'student';
     const phone = String(options.data?.phone || '').trim();
-    if (phone === '13800000010') {
+    if (phone === '18222288952') {
       return Promise.resolve(role === 'teacher'
-        ? { user: { id: 'access-inspector-teacher', role: 'teacher', name: '前端巡检', phone, status: 'active' }, profile: teachers[0] }
-        : { user: { id: 'access-inspector-student', role: 'student', name: '前端巡检', phone, status: 'active' }, profile: students[0] });
+        ? { user: { id: 'access-inspector-teacher', role: 'teacher', name: '开发巡检', phone, status: 'active' }, profile: teachers[0] }
+        : { user: { id: 'access-inspector-student', role: 'student', name: '开发巡检', phone, status: 'active' }, profile: students[0] });
     }
     if (role === 'teacher') {
       const teacher = teachers.find((item) => String(item.phone || '').trim() === phone) || (!phone ? teachers[0] : null);

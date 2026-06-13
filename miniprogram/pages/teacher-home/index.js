@@ -59,9 +59,9 @@ Page({
     app.globalData.currentUser = result.user || app.globalData.currentUser;
     app.globalData.teacherId = result.profile.id;
     app.globalData.campusId = result.profile.campus_id;
-    wx.setStorageSync('roleAuthToken', app.globalData.authToken);
-    wx.setStorageSync('roleUser', app.globalData.currentUser);
-    wx.setStorageSync('roleProfile', result.profile);
+    wx.setStorageSync('roleAuthToken:teacher', app.globalData.authToken);
+    wx.setStorageSync('roleUser:teacher', app.globalData.currentUser);
+    wx.setStorageSync('roleProfile:teacher', result.profile);
     await this.load();
   },
   async loadSyncEvents() {

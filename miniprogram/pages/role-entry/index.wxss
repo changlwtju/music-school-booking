@@ -5,15 +5,15 @@
 .role-list {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
+  gap: 14rpx;
 }
 
 .role-card {
-  min-height: 180rpx;
+  min-height: 154rpx;
   display: flex;
   align-items: center;
-  gap: 22rpx;
-  padding: 28rpx;
+  gap: 20rpx;
+  padding: 24rpx;
   border-radius: 8rpx;
   border: 2rpx solid rgba(83, 157, 115, 0.18);
   background: rgba(255, 255, 255, 0.94);
@@ -29,13 +29,29 @@
   background: rgba(255, 255, 255, 0.94);
 }
 
-.role-icon {
+.role-icon-wrap {
   flex: 0 0 auto;
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 8rpx;
+  width: 84rpx;
+  height: 84rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20rpx;
+  background: rgba(83, 157, 115, 0.12);
+}
+
+.teacher-icon {
+  background: rgba(42, 103, 144, 0.12);
+}
+
+.manager-icon {
+  background: rgba(183, 126, 45, 0.14);
+}
+
+.role-icon {
+  width: 54rpx;
+  height: 54rpx;
   display: block;
-  background: #4B966A;
 }
 
 .role-copy {
@@ -50,10 +66,10 @@
 }
 
 .role-desc {
-  margin-top: 8rpx;
+  margin-top: 6rpx;
   color: #5F7569;
   font-size: 24rpx;
-  line-height: 1.55;
+  line-height: 1.45;
 }
 
 .role-arrow {

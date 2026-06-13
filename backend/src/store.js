@@ -12,6 +12,8 @@ export const courseCatalog = [
   { id: 'course-drum', name: '架子鼓', icon: '🥁', iconClass: 'drum', desc: '节拍、律动与乐队配合' }
 ];
 
+const DEVELOPMENT_INSPECTOR_PHONE = '18222288952';
+
 export function createInitialData() {
   const now = new Date().toISOString();
   const today = localDate(0);
@@ -62,8 +64,8 @@ export function createInitialData() {
       { id: 'user-student-19ae2b74d3', openid: 'demo-student-19ae2b74d3', name: '薛冬瑞', phone: '', role: 'student', status: 'active' }
     ],
     accessUsers: [
-      { id: 'access-inspector-student', role: 'student', profile_id: 'student-a4e31feaf1', name: '前端巡检', phone: '13800000010', status: 'active', notes: '前端巡检账号：学生端' },
-      { id: 'access-inspector-teacher', role: 'teacher', profile_id: 'teacher-695b7e061b', name: '前端巡检', phone: '13800000010', status: 'active', notes: '前端巡检账号：老师端' },
+      { id: 'access-inspector-student', role: 'student', profile_id: 'student-a4e31feaf1', name: '开发巡检', phone: DEVELOPMENT_INSPECTOR_PHONE, status: 'active', notes: '独立开发巡检身份：学生端视角' },
+      { id: 'access-inspector-teacher', role: 'teacher', profile_id: 'teacher-695b7e061b', name: '开发巡检', phone: DEVELOPMENT_INSPECTOR_PHONE, status: 'active', notes: '独立开发巡检身份：老师端视角' },
       { id: 'access-teacher-695b7e061b', role: 'teacher', profile_id: 'teacher-695b7e061b', name: '刘芗齐', phone: '', status: 'active', notes: '默认老师端访问权限' },
       { id: 'access-teacher-c823a14da0', role: 'teacher', profile_id: 'teacher-c823a14da0', name: '闻俊浩', phone: '', status: 'active', notes: '默认老师端访问权限' },
       { id: 'access-student-a4e31feaf1', role: 'student', profile_id: 'student-a4e31feaf1', name: '唐鹏', phone: '', status: 'active', notes: '默认学生端访问权限' },
@@ -176,11 +178,11 @@ function ensureInspectorAccess(data) {
       id: 'access-inspector-student',
       role: 'student',
       profile_id: firstStudent.id,
-      name: '前端巡检',
-      phone: '13800000010',
+      name: '开发巡检',
+      phone: DEVELOPMENT_INSPECTOR_PHONE,
       wechat_openid: '',
       status: 'active',
-      notes: '前端巡检账号：学生端'
+      notes: '独立开发巡检身份：学生端视角'
     });
   }
   if (firstTeacher) {
@@ -188,11 +190,11 @@ function ensureInspectorAccess(data) {
       id: 'access-inspector-teacher',
       role: 'teacher',
       profile_id: firstTeacher.id,
-      name: '前端巡检',
-      phone: '13800000010',
+      name: '开发巡检',
+      phone: DEVELOPMENT_INSPECTOR_PHONE,
       wechat_openid: '',
       status: 'active',
-      notes: '前端巡检账号：老师端'
+      notes: '独立开发巡检身份：老师端视角'
     });
   }
   return changed;
@@ -201,10 +203,10 @@ function ensureInspectorAccess(data) {
 function ensureManagerAccess(data) {
   data.accessUsers ||= [];
   const managers = [
-    { id: 'access-manager-zhu-yunsheng', legacyIds: ['access-manager-zhu-yuanxin'], name: '朱云笙', phone: '16724456666', notes: '门店管理者；管理者端代约、取消及巡检账号' },
-    { id: 'access-manager-liu-jiwen', name: '刘继文', phone: '15604414117', notes: '门店管理者；管理者端代约、取消及巡检账号' },
-    { id: 'access-manager-wang-jinwu', name: '王金武', phone: '18543171304', notes: '门店管理者；管理者端代约、取消及巡检账号' },
-    { id: 'access-manager-chang-liwen', name: '常立文', phone: '18222288952', notes: '开发者；管理者端功能巡检账号' }
+    { id: 'access-manager-zhu-yunsheng', legacyIds: ['access-manager-zhu-yuanxin'], name: '朱云笙', phone: '16724456666', notes: '门店管理员；管理员端代约、取消及巡检账号' },
+    { id: 'access-manager-liu-jiwen', name: '刘继文', phone: '15604414117', notes: '门店管理员；管理员端代约、取消及巡检账号' },
+    { id: 'access-manager-wang-jinwu', name: '王金武', phone: '18543171304', notes: '门店管理员；管理员端代约、取消及巡检账号' },
+    { id: 'access-manager-chang-liwen', name: '常立文', phone: '18222288952', notes: '开发者；管理员端功能巡检账号' }
   ];
   let changed = false;
   for (const manager of managers) {

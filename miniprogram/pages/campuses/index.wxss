@@ -1,1 +1,12 @@
-.btn { margin-top: 18rpx; }
+.campus-card {
+  padding: 22rpx;
+}
+
+.campus-card .pill {
+  max-width: 44%;
+}
+
+.map-btn {
+  width: 100%;
+  margin-top: 16rpx;
+}

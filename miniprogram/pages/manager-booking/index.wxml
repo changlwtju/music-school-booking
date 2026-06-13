@@ -2,12 +2,12 @@
   <view class="topbar">
     <image class="logo" src="/assets/brand/avatar.jpg" mode="aspectFill" />
     <view>
-      <view class="brand-title">{{managerName}}的管理工作台</view>
+      <view class="brand-title">{{managerName}}的管理员工作台</view>
       <view class="brand-subtitle">代学生约课与取消预约</view>
     </view>
   </view>
 
-  <view class="notice">管理者操作不受学生端课表释放时间和开课前 1.5 小时限制，操作结果会立即同步到老师课表。</view>
+  <view class="notice">管理员操作不受学生端课表释放时间和开课前 1.5 小时限制，操作结果会立即同步到老师课表。</view>
 
   <view class="section-title">代学生约课</view>
   <view class="card manager-form">

@@ -1,1 +1,19 @@
-.row { min-height: 58rpx; color: #1F3D32; font-size: 26rpx; }
+.row {
+  min-height: 54rpx;
+  align-items: flex-start;
+  padding: 8rpx 0;
+  color: #1F3D32;
+  font-size: 26rpx;
+  line-height: 1.4;
+}
+
+.row text:first-child {
+  flex: 0 0 auto;
+  color: #5F7569;
+}
+
+.row text:last-child {
+  min-width: 0;
+  flex: 1;
+  text-align: right;
+}
