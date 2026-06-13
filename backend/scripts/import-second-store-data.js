@@ -91,7 +91,7 @@ function main() {
     latitude: null,
     longitude: null,
     hours: '周二至周日 12:00-20:00',
-    image: '/assets/brand/brand-display.png',
+    image: '/assets/brand/brand-display.jpg',
     release_time: '20:00',
     desc: '来源：二店学员信息.xlsx；位于融创上城二期别墅区',
     status: 'active',

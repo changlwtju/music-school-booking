@@ -145,7 +145,7 @@ function buildImportData(workbook, existingStore) {
       latitude: null,
       longitude: null,
       hours: text(row['营业时间']) || '周二至周日 12:00-20:00',
-      image: '/assets/brand/brand-display.png',
+      image: '/assets/brand/brand-display.jpg',
       release_time: '20:00',
       desc: text(row['备注'])
     });

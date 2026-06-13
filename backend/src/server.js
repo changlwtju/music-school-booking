@@ -777,7 +777,7 @@ app.post('/admin/api/campuses', requireAdmin, (req, res) => {
     latitude: parsed.data.latitude === '' || parsed.data.latitude === undefined ? null : Number(parsed.data.latitude),
     longitude: parsed.data.longitude === '' || parsed.data.longitude === undefined ? null : Number(parsed.data.longitude),
     hours: parsed.data.hours || '周二至周日 12:00-20:00',
-    image: parsed.data.image || '/assets/brand/brand-display.png',
+    image: parsed.data.image || '/assets/brand/brand-display.jpg',
     release_time: parsed.data.releaseTime || '20:00',
     desc: parsed.data.desc || '',
     status,

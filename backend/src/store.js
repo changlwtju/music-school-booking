@@ -29,7 +29,7 @@ export function createInitialData() {
         latitude: null,
         longitude: null,
         hours: '周二至周日 12:00-20:00',
-        image: '/assets/brand/brand-display.png',
+        image: '/assets/brand/brand-display.jpg',
         release_time: '20:00',
         desc: '原表校区名称：一店御翠园店；二店资料待补充',
         status: 'active',
@@ -46,7 +46,7 @@ export function createInitialData() {
         latitude: null,
         longitude: null,
         hours: '周二至周日 12:00-20:00',
-        image: '/assets/brand/brand-display.png',
+        image: '/assets/brand/brand-display.jpg',
         release_time: '20:00',
         desc: '二店位于融创上城二期别墅区',
         status: 'active',
@@ -135,13 +135,19 @@ export const store = loadStore();
 
 function ensureCampusDetails(data) {
   const secondCampus = (data.campuses || []).find((item) => item.short_name === '二店' || String(item.name || '').includes('融创上城'));
-  if (!secondCampus) return false;
+  let changed = false;
+  for (const campus of data.campuses || []) {
+    const before = JSON.stringify(campus);
+    if (campus.image === '/assets/brand/brand-display.png') campus.image = '/assets/brand/brand-display.jpg';
+    changed = changed || before !== JSON.stringify(campus);
+  }
+  if (!secondCampus) return changed;
   const address = '长春市高新区融创上城二期别墅区';
   const before = JSON.stringify(secondCampus);
   if (!secondCampus.address || secondCampus.address.includes('待')) secondCampus.address = address;
   if (!secondCampus.map_keyword || secondCampus.map_keyword.includes('待')) secondCampus.map_keyword = address;
   if (!secondCampus.desc || secondCampus.desc.includes('待补充')) secondCampus.desc = '二店位于融创上城二期别墅区';
-  return before !== JSON.stringify(secondCampus);
+  return changed || before !== JSON.stringify(secondCampus);
 }
 
 function ensureInspectorAccess(data) {
