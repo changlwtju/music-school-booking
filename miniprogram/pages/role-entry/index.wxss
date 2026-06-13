@@ -25,8 +25,8 @@
 }
 
 .role-card.manager {
-  border-color: rgba(42, 103, 144, 0.26);
-  background: rgba(246, 251, 252, 0.96);
+  border-color: rgba(83, 157, 115, 0.18);
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .role-icon {

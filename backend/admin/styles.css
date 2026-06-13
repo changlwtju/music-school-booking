@@ -68,14 +68,6 @@ button {
   object-fit: cover;
 }
 
-.login-hero {
-  width: 100%;
-  display: block;
-  margin: -10px 0 22px;
-  border-radius: 8px;
-  background: #E7EFE9;
-}
-
 h1,
 h2,
 h3,
@@ -255,7 +247,7 @@ nav {
 
 .topbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  grid-template-columns: minmax(220px, 1fr) auto;
   align-items: center;
   gap: 16px;
   margin-bottom: 22px;
@@ -263,26 +255,6 @@ nav {
 
 .topbar-copy {
   min-width: 0;
-}
-
-.topbar-brand {
-  display: block;
-  width: clamp(240px, 24vw, 330px);
-  padding: 5px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.48));
-  box-shadow: 0 10px 26px rgba(31, 61, 50, 0.06);
-  overflow: hidden;
-}
-
-.topbar-brand img {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 2172 / 724;
-  border-radius: 10px;
-  object-fit: cover;
 }
 
 .icon-btn {
@@ -1050,10 +1022,6 @@ tr:last-child td {
   .modal-actions {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .topbar-brand {
-    display: none;
   }
 
   .section-heading {

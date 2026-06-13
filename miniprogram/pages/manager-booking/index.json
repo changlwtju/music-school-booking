@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "管理者约课"
+  "navigationBarTitleText": "管理者约课",
+  "navigationBarBackgroundColor": "#F7F4EE",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F7F4EE"
 }
