@@ -18,6 +18,8 @@ const corrections = [
   },
   {
     role: 'teacher',
+    teacherId: 'teacher-695b7e061b',
+    userId: 'user-teacher-695b7e061b',
     fromNames: ['刘梦齐'],
     name: '刘芗齐',
     phone: '15584430084',
@@ -26,6 +28,8 @@ const corrections = [
   },
   {
     role: 'teacher',
+    teacherId: 'teacher-c823a14da0',
+    userId: 'user-teacher-c823a14da0',
     fromNames: ['闫俊浩'],
     name: '闻俊浩',
     phone: '13894477985',
@@ -34,6 +38,8 @@ const corrections = [
   },
   {
     role: 'teacher',
+    teacherId: 'teacher-3c5f1438ea',
+    userId: 'user-teacher-3c5f1438ea',
     fromNames: ['郝瀚'],
     name: '郝翰',
     phone: '18104028815',
@@ -56,7 +62,10 @@ function parseArgs(argv) {
 function renameEntityList(list, correction, matchProfileId = '') {
   let changed = 0;
   for (const item of list || []) {
+    if (String(item.id || '').startsWith('access-inspector-')) continue;
     const isMatch = item.phone === correction.phone
+      || item.id === correction.teacherId
+      || item.id === correction.userId
       || correction.fromNames.includes(item.name)
       || (matchProfileId && item.profile_id === matchProfileId);
     if (!isMatch) continue;
@@ -105,7 +114,9 @@ function normalizeManagers(data, correction) {
 
 function normalizeTeachers(data, correction) {
   const teacher = (data.teachers || []).find((item) => (
-    item.phone === correction.phone || correction.fromNames.includes(item.name)
+    item.id === correction.teacherId
+    || item.phone === correction.phone
+    || correction.fromNames.includes(item.name)
   ));
   const profileId = teacher?.id || '';
   let changed = 0;

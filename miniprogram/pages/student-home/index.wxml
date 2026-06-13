@@ -7,6 +7,15 @@
     </view>
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />
+  <view wx:if="{{isInspector}}" class="inspector-switch">
+    <view>
+      <view class="inspector-title">巡检学生档案</view>
+      <view class="meta">仅开发巡检可见，可切换任意学生视角</view>
+    </view>
+    <picker mode="selector" range="{{inspectorLabels}}" value="{{activeInspectorIndex}}" bindchange="switchInspectorProfile">
+      <view class="inspector-picker">{{inspectorLabels[activeInspectorIndex] || '选择学生档案'}}</view>
+    </picker>
+  </view>
   <view class="notice">授课时间 12:00-20:00；每节课 45 分钟；周一全店休息；17:15-17:45 为晚餐休息；次日课表前一天 20:00 后释放；距离开课不足 1.5 小时请联系老师处理。</view>
 
   <view class="section-title">学生服务</view>

@@ -53,23 +53,84 @@ function requireAdmin(req, res, next) {
 }
 
 function requireManager(req, res, next) {
-  const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const session = verifyMobileToken(token);
-  if (!session || session.role !== 'manager') return fail(res, 401, '请先登录管理者端');
-  const access = (store.accessUsers || []).find((item) => item.id === session.accessId && item.role === 'manager' && item.status === 'active');
-  if (!access) return fail(res, 403, '管理者账号已停用');
-  req.manager = access;
-  next();
+  return requireMobileRole('manager')(req, res, next);
 }
 
-function createMobileToken(access) {
+function requireMobileRole(...roles) {
+  return (req, res, next) => {
+    const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    const session = verifyMobileToken(token);
+    if (!session || !roles.includes(session.role)) return fail(res, 401, '请先登录对应身份');
+    const access = (store.accessUsers || []).find((item) => (
+      item.id === session.accessId
+      && item.role === session.role
+      && item.status === 'active'
+    ));
+    if (!access) return fail(res, 403, '当前访问权限已停用');
+    const isInspector = isInspectorAccess(access);
+    if (access.role !== 'manager' && !isInspector && session.profileId !== access.profile_id) {
+      return fail(res, 401, '档案绑定已变更，请重新登录');
+    }
+    const effectiveProfileId = isInspector ? session.profileId : access.profile_id;
+    const profile = access.role === 'teacher'
+      ? (store.teachers || []).find((item) => item.id === effectiveProfileId && item.status === 'active')
+      : access.role === 'student'
+        ? (store.students || []).find((item) => item.id === effectiveProfileId && item.status === 'active')
+        : access;
+    if (!profile) return fail(res, 403, '关联档案已停用');
+    req.mobileAccess = access;
+    req.mobileProfile = profile;
+    if (access.role === 'manager') req.manager = access;
+    next();
+  };
+}
+
+function isInspectorAccess(access) {
+  return ['access-inspector-student', 'access-inspector-teacher'].includes(access?.id);
+}
+
+function requireStudent(req, res, next) {
+  return requireMobileRole('student')(req, res, next);
+}
+
+function requireTeacher(req, res, next) {
+  return requireMobileRole('teacher')(req, res, next);
+}
+
+function requireTeacherOrStudent(req, res, next) {
+  return requireMobileRole('teacher', 'student')(req, res, next);
+}
+
+function requireAdminConfirmation(req, res) {
+  const password = String(req.body?.confirmationPassword || '');
+  if (!password || !safeEqual(password, adminPassword)) {
+    fail(res, 403, '二次确认密码不正确');
+    return false;
+  }
+  return true;
+}
+
+function createMobileToken(access, profileId = access.profile_id || '') {
   const payload = Buffer.from(JSON.stringify({
     accessId: access.id,
     role: access.role,
+    profileId,
     expiresAt: Date.now() + mobileSessionTtlMs
   })).toString('base64url');
   const signature = crypto.createHmac('sha256', mobileAuthSecret).update(payload).digest('base64url');
   return `${payload}.${signature}`;
+}
+
+function mobileUserView(access, profile = {}) {
+  return {
+    id: access.id,
+    name: access.name || profile.name,
+    phone: access.phone,
+    wechat_openid: access.wechat_openid || '',
+    role: access.role,
+    status: access.status,
+    is_inspector: isInspectorAccess(access)
+  };
 }
 
 function verifyMobileToken(token) {
@@ -213,6 +274,19 @@ function inspectorRows() {
   return ['student', 'teacher'].map((role) => accessRows().find((item) => item.id === `access-inspector-${role}`)).filter(Boolean);
 }
 
+function hasAccessIdentityConflict({ role, phone = '', wechatOpenid = '', excludeId = '' }) {
+  const normalizedPhone = String(phone || '').trim();
+  const normalizedOpenid = String(wechatOpenid || '').trim();
+  return (store.accessUsers || []).some((item) => (
+    item.id !== excludeId
+    && item.role === role
+    && (
+      (normalizedPhone && String(item.phone || '').trim() === normalizedPhone)
+      || (normalizedOpenid && String(item.wechat_openid || '').trim() === normalizedOpenid)
+    )
+  ));
+}
+
 function adminStudentRows({ keyword = '', teacherId = '', status = '' } = {}) {
   const normalized = String(keyword || '').trim();
   return (store.bindings || [])
@@ -278,6 +352,15 @@ function buildFullDayClosedSlots(reason = '老师请假') {
   }));
 }
 
+function slotConflictMessage(slot) {
+  if (!slot) return '该时间不可预约';
+  if (slot.status === 'occupied' && slot.appointment) {
+    const occupied = appointmentView(slot.appointment);
+    return `该时段已被${occupied.student_name || '其他学员'}的${occupied.course || '课程'}占用`;
+  }
+  return slot.reason || '该时间不可预约';
+}
+
 function createTrialAppointment({
   teacherId,
   campusId,
@@ -299,7 +382,7 @@ function createTrialAppointment({
   const availability = availabilityForDate(teacherId, date);
   const bookableSlot = buildSlots({ date, appointments, availability, enforceRelease: false }).find((item) => item.startTime === startTime);
   if (!bookableSlot || bookableSlot.status !== 'available') {
-    return { error: { status: 409, message: bookableSlot?.reason || '该时间不可预约' } };
+    return { error: { status: 409, message: slotConflictMessage(bookableSlot) } };
   }
 
   const now = new Date().toISOString();
@@ -355,7 +438,7 @@ function createAdminAppointment({ studentId, bindingId, date, startTime, note = 
   const availability = availabilityForDate(binding.teacher_id, date);
   const bookableSlot = buildSlots({ date, appointments, contract, availability, enforceRelease: false }).find((item) => item.startTime === startTime);
   if (!bookableSlot || bookableSlot.status !== 'available') {
-    return { error: { status: 409, message: bookableSlot?.reason || '该时间不可预约' } };
+    return { error: { status: 409, message: slotConflictMessage(bookableSlot) } };
   }
   const now = new Date().toISOString();
   const appointment = {
@@ -474,9 +557,11 @@ app.post('/admin/api/logout', requireAdmin, (req, res) => {
   ok(res, { ok: true });
 });
 
-app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
+app.get('/admin/api/dashboard', requireAdmin, (req, res) => {
   const today = dayjs().format('YYYY-MM-DD');
   const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
+  const requestedDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(req.query.date);
+  const scheduleDate = requestedDate.success ? requestedDate.data : today;
   const teacherStats = (store.teachers || []).map((teacher) => {
     const rows = adminStudentRows({ teacherId: teacher.id });
     const appointments = (store.appointments || []).filter((item) => item.teacher_id === teacher.id && item.status === 'booked');
@@ -506,6 +591,10 @@ app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
     .slice(0, 8);
   const todayAppointments = (store.appointments || [])
     .filter((item) => item.date === today)
+    .map(appointmentView)
+    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  const scheduleAppointments = (store.appointments || [])
+    .filter((item) => item.date === scheduleDate)
     .map(appointmentView)
     .sort((a, b) => a.start_time.localeCompare(b.start_time));
   const recentSync = syncEvents({ limit: 8 });
@@ -542,6 +631,8 @@ app.get('/admin/api/dashboard', requireAdmin, (_req, res) => {
       teacher_count: item.teachers.size
     })),
     campuses: store.campuses || [],
+    scheduleDate,
+    scheduleAppointments,
     todayAppointments,
     recentSync,
     upcomingAppointments
@@ -949,6 +1040,11 @@ app.post('/admin/api/access-users', requireAdmin, (req, res) => {
       : null;
   if (parsed.data.role !== 'manager' && !profile) return fail(res, 404, '关联档案不存在');
   if (parsed.data.role === 'manager' && !parsed.data.name) return fail(res, 400, '请填写管理者姓名');
+  if (hasAccessIdentityConflict({
+    role: parsed.data.role,
+    phone: parsed.data.phone,
+    wechatOpenid: parsed.data.wechatOpenid
+  })) return fail(res, 409, '同一身份下手机号或微信 OpenID 已被其他账号使用');
   const item = {
     id: stableId('access', parsed.data.role, parsed.data.profileId || parsed.data.phone || parsed.data.name),
     role: parsed.data.role,
@@ -986,6 +1082,12 @@ app.patch('/admin/api/access-users/:accessId', requireAdmin, (req, res) => {
       ? (store.students || []).find((entry) => entry.id === profileId)
       : null;
   if (role !== 'manager' && !profile) return fail(res, 404, '关联档案不存在');
+  if (hasAccessIdentityConflict({
+    role,
+    phone: parsed.data.phone === undefined ? item.phone : parsed.data.phone,
+    wechatOpenid: parsed.data.wechatOpenid === undefined ? item.wechat_openid : parsed.data.wechatOpenid,
+    excludeId: item.id
+  })) return fail(res, 409, '同一身份下手机号或微信 OpenID 已被其他账号使用');
   item.role = role;
   item.profile_id = profileId;
   if (parsed.data.name !== undefined) item.name = parsed.data.name || profile?.name || item.name;
@@ -1034,7 +1136,8 @@ app.patch('/admin/api/inspectors', requireAdmin, (req, res) => {
 });
 
 app.get('/admin/api/appointments', requireAdmin, (req, res) => {
-  const { date = '', teacherId = '', status = '' } = req.query;
+  const { date = '', studentKeyword = '', teacherId = '', status = '' } = req.query;
+  const normalizedStudentKeyword = String(studentKeyword).trim();
   const data = (store.appointments || [])
     .filter((item) => !date || item.date === date)
     .filter((item) => !teacherId || item.teacher_id === teacherId)
@@ -1044,11 +1147,13 @@ app.get('/admin/api/appointments', requireAdmin, (req, res) => {
       sync_source: item.created_by === 'admin' ? '后台创建' : '学生端预约',
       synced_to_teacher: Boolean(item.teacher_id)
     }))
+    .filter((item) => !normalizedStudentKeyword || String(item.student_name || '').includes(normalizedStudentKeyword))
     .sort((a, b) => `${b.date} ${b.start_time}`.localeCompare(`${a.date} ${a.start_time}`));
   ok(res, data);
 });
 
 app.post('/admin/api/appointments', requireAdmin, (req, res) => {
+  if (!requireAdminConfirmation(req, res)) return;
   const parsed = z.object({
     studentId: z.string(),
     bindingId: z.string(),
@@ -1062,7 +1167,47 @@ app.post('/admin/api/appointments', requireAdmin, (req, res) => {
   ok(res, appointmentView(result.appointment));
 });
 
+app.post('/admin/api/appointments/batch', requireAdmin, (req, res) => {
+  if (!requireAdminConfirmation(req, res)) return;
+  const parsed = z.object({
+    studentId: z.string(),
+    bindingId: z.string(),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    weekdays: z.array(z.union([z.number(), z.string()])).min(1),
+    startTime: z.string(),
+    note: z.string().optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '批量预约信息不完整');
+  const start = dayjs(parsed.data.startDate);
+  const end = dayjs(parsed.data.endDate);
+  if (!start.isValid() || !end.isValid() || end.isBefore(start, 'day')) return fail(res, 400, '日期范围无效');
+  if (end.diff(start, 'day') > 90) return fail(res, 400, '单次批量预约最多覆盖 90 天');
+  const weekdays = new Set(parsed.data.weekdays.map(Number));
+  const dates = [];
+  for (let cursor = start; !cursor.isAfter(end, 'day'); cursor = cursor.add(1, 'day')) {
+    if (weekdays.has(cursor.day())) dates.push(cursor.format('YYYY-MM-DD'));
+  }
+  if (!dates.length) return fail(res, 400, '日期范围内没有符合所选星期的日期');
+  const created = [];
+  const conflicts = [];
+  for (const date of dates) {
+    const result = createAdminAppointment({
+      studentId: parsed.data.studentId,
+      bindingId: parsed.data.bindingId,
+      date,
+      startTime: parsed.data.startTime,
+      note: parsed.data.note,
+      actor: 'admin:batch'
+    });
+    if (result.error) conflicts.push({ date, message: result.error.message });
+    else created.push(appointmentView(result.appointment));
+  }
+  ok(res, { requested: dates.length, created, conflicts });
+});
+
 app.post('/admin/api/appointments/:appointmentId/cancel', requireAdmin, (req, res) => {
+  if (!requireAdminConfirmation(req, res)) return;
   const appointment = store.appointments.find((item) => item.id === req.params.appointmentId);
   if (!appointment) return fail(res, 404, '预约不存在');
   if (appointment.status !== 'booked') return fail(res, 409, '当前预约不可取消');
@@ -1072,6 +1217,36 @@ app.post('/admin/api/appointments/:appointmentId/cancel', requireAdmin, (req, re
   appointment.updated_at = new Date().toISOString();
   saveStore(store);
   ok(res, appointmentView(appointment));
+});
+
+app.post('/admin/api/appointments/batch-cancel', requireAdmin, (req, res) => {
+  if (!requireAdminConfirmation(req, res)) return;
+  const parsed = z.object({
+    appointmentIds: z.array(z.string()).min(1).max(100),
+    reason: z.string().min(1)
+  }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '请选择需要取消的课程并填写原因');
+  const cancelled = [];
+  const skipped = [];
+  const now = new Date().toISOString();
+  for (const appointmentId of [...new Set(parsed.data.appointmentIds)]) {
+    const appointment = store.appointments.find((item) => item.id === appointmentId);
+    if (!appointment) {
+      skipped.push({ id: appointmentId, message: '预约不存在' });
+      continue;
+    }
+    if (appointment.status !== 'booked') {
+      skipped.push({ id: appointmentId, message: '课程已完成或已取消' });
+      continue;
+    }
+    appointment.status = 'cancelled';
+    appointment.cancel_reason = parsed.data.reason;
+    appointment.cancelled_by = 'admin:batch';
+    appointment.updated_at = now;
+    cancelled.push(appointmentView(appointment));
+  }
+  if (cancelled.length) saveStore(store);
+  ok(res, { cancelled, skipped });
 });
 
 app.get('/admin/api/schedule-slots', requireAdmin, (_req, res) => {
@@ -1160,6 +1335,7 @@ app.post('/admin/api/lock-slots', requireAdmin, (req, res) => {
 });
 
 app.post('/admin/api/trial-appointments', requireAdmin, (req, res) => {
+  if (!requireAdminConfirmation(req, res)) return;
   const parsed = z.object({
     teacherId: z.string(),
     campusId: z.string(),
@@ -1193,10 +1369,9 @@ app.get('/payment-code', (_req, res) => {
   });
 });
 
-app.get('/sync-events', (req, res) => {
+app.get('/sync-events', requireTeacher, (req, res) => {
   ok(res, syncEvents({
-    teacherId: req.query.teacherId,
-    studentId: req.query.studentId,
+    teacherId: req.mobileProfile.id,
     limit: req.query.limit
   }));
 });
@@ -1215,14 +1390,8 @@ app.post('/auth/demo-login', (req, res) => {
       : store.students.find((item) => item.id === inspectorAccess.profile_id && item.status === 'active');
     if (profile) {
       return ok(res, {
-        user: {
-          id: 'user-inspector',
-          name: inspectorAccess.name,
-          phone: inspectorAccess.phone,
-          wechat_openid: inspectorAccess.wechat_openid || '',
-          role,
-          status: inspectorAccess.status
-        },
+        authToken: createMobileToken(inspectorAccess, profile.id),
+        user: mobileUserView(inspectorAccess, profile),
         profile
       });
     }
@@ -1232,7 +1401,41 @@ app.post('/auth/demo-login', (req, res) => {
   const profile = role === 'teacher'
     ? store.teachers.find((item) => item.user_id === user.id)
     : store.students.find((item) => item.user_id === user.id);
-  ok(res, { user, profile });
+  const access = (store.accessUsers || []).find((item) => item.role === role && item.profile_id === profile?.id && item.status === 'active');
+  if (!access || !profile) return fail(res, 403, '巡检档案未开通访问权限');
+  ok(res, { authToken: createMobileToken(access, profile.id), user: mobileUserView(access, profile), profile });
+});
+
+app.get('/auth/inspector-profiles', requireTeacherOrStudent, (req, res) => {
+  if (!isInspectorAccess(req.mobileAccess)) return fail(res, 403, '当前账号不是巡检账号');
+  const profiles = req.mobileAccess.role === 'teacher'
+    ? (store.teachers || [])
+        .filter((item) => item.status === 'active')
+        .map((item) => ({ id: item.id, name: item.name, campus_id: item.campus_id, campus_name: campusName(item.campus_id), course: item.primary_course || '' }))
+    : adminStudentRows({ status: 'active' }).map((item) => ({
+        id: item.student_id,
+        name: item.name,
+        campus_id: item.campus_id,
+        campus_name: item.campus_name,
+        course: item.course,
+        teacher_name: item.teacher_name
+      }));
+  ok(res, { role: req.mobileAccess.role, currentProfileId: req.mobileProfile.id, profiles });
+});
+
+app.post('/auth/inspector-switch', requireTeacherOrStudent, (req, res) => {
+  if (!isInspectorAccess(req.mobileAccess)) return fail(res, 403, '当前账号不是巡检账号');
+  const parsed = z.object({ profileId: z.string().min(1) }).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, '请选择巡检档案');
+  const profile = req.mobileAccess.role === 'teacher'
+    ? (store.teachers || []).find((item) => item.id === parsed.data.profileId && item.status === 'active')
+    : (store.students || []).find((item) => item.id === parsed.data.profileId && item.status === 'active');
+  if (!profile) return fail(res, 404, '巡检档案不存在或已停用');
+  ok(res, {
+    authToken: createMobileToken(req.mobileAccess, profile.id),
+    user: mobileUserView(req.mobileAccess, profile),
+    profile
+  });
 });
 
 app.post('/auth/role-login', (req, res) => {
@@ -1245,7 +1448,7 @@ app.post('/auth/role-login', (req, res) => {
   ensureAccessUsers();
   const phone = String(parsed.data.phone || '').trim();
   const openid = String(parsed.data.openid || '').trim();
-  const access = (store.accessUsers || []).find((item) => (
+  const matches = (store.accessUsers || []).filter((item) => (
     item.role === parsed.data.role
     && item.status === 'active'
     && (
@@ -1253,6 +1456,8 @@ app.post('/auth/role-login', (req, res) => {
       || (phone && String(item.phone || '').trim() === phone)
     )
   ));
+  if (matches.length > 1) return fail(res, 409, '该登录身份存在重复授权，请联系后台处理');
+  const access = matches[0];
   if (!access) return fail(res, 403, '未开通该身份的小程序访问权限，请联系琴行后台添加');
   if (parsed.data.role === 'manager') {
     const token = createMobileToken(access);
@@ -1278,14 +1483,8 @@ app.post('/auth/role-login', (req, res) => {
     : (store.students || []).find((item) => item.id === access.profile_id && item.status === 'active');
   if (!profile) return fail(res, 403, '关联档案已停用，请联系琴行');
   ok(res, {
-    user: {
-      id: access.id,
-      name: access.name || profile.name,
-      phone: access.phone,
-      wechat_openid: access.wechat_openid || '',
-      role: access.role,
-      status: access.status
-    },
+    authToken: createMobileToken(access, profile.id),
+    user: mobileUserView(access, profile),
     profile
   });
 });
@@ -1351,7 +1550,8 @@ app.post('/manager/appointments/:appointmentId/cancel', requireManager, (req, re
 
 app.get('/campuses', (_req, res) => ok(res, (store.campuses || []).filter((item) => item.status !== 'inactive')));
 
-app.get('/students/:studentId/summary', (req, res) => {
+app.get('/students/:studentId/summary', requireStudent, (req, res) => {
+  if (req.params.studentId !== req.mobileProfile.id) return fail(res, 403, '无权查看其他学员资料');
   const student = store.students.find((item) => item.id === req.params.studentId);
   if (!student) return fail(res, 404, '学生不存在');
   const campus = store.campuses.find((item) => item.id === student.campus_id) || {};
@@ -1379,7 +1579,8 @@ app.get('/students/:studentId/summary', (req, res) => {
   });
 });
 
-app.get('/students/:studentId/bookable-courses', (req, res) => {
+app.get('/students/:studentId/bookable-courses', requireStudent, (req, res) => {
+  if (req.params.studentId !== req.mobileProfile.id) return fail(res, 403, '无权查看其他学员课程');
   const data = store.bindings
     .filter((item) => item.student_id === req.params.studentId && item.status === 'active')
     .map((binding) => {
@@ -1400,7 +1601,7 @@ app.get('/students/:studentId/bookable-courses', (req, res) => {
   ok(res, data);
 });
 
-app.get('/schedule/slots', (req, res) => {
+app.get('/schedule/slots', requireStudent, (req, res) => {
   const parsed = z.object({
     teacherId: z.string(),
     contractId: z.string(),
@@ -1410,6 +1611,7 @@ app.get('/schedule/slots', (req, res) => {
   const { teacherId, contractId, date } = parsed.data;
   const contract = contractById(contractId);
   if (!contract) return fail(res, 404, '合同不存在');
+  if (contract.student_id !== req.mobileProfile.id) return fail(res, 403, '无权查看其他学员课表');
   const appointments = store.appointments.filter((item) => item.teacher_id === teacherId && item.date === date);
   const availability = availabilityForDate(teacherId, date);
   ok(res, {
@@ -1425,7 +1627,7 @@ app.get('/schedule/slots', (req, res) => {
   });
 });
 
-app.post('/appointments', (req, res) => {
+app.post('/appointments', requireStudent, (req, res) => {
   const parsed = z.object({
     studentId: z.string(),
     bindingId: z.string(),
@@ -1434,6 +1636,7 @@ app.post('/appointments', (req, res) => {
   }).safeParse(req.body);
   if (!parsed.success) return fail(res, 400, '预约信息不完整');
   const { studentId, bindingId, date, startTime } = parsed.data;
+  if (studentId !== req.mobileProfile.id) return fail(res, 403, '无权代其他学员约课');
   const slot = DEFAULT_SLOTS.find(([start]) => start === startTime);
   if (!slot) return fail(res, 400, '无效时间段');
   if (isMonday(date)) return fail(res, 409, '周一全店休息，不开放预约');
@@ -1468,7 +1671,7 @@ app.post('/appointments', (req, res) => {
   ok(res, appointmentView(appointment));
 });
 
-app.get('/admin/teacher-availability', (req, res) => {
+app.get('/admin/teacher-availability', requireAdmin, (req, res) => {
   const parsed = z.object({
     teacherId: z.string(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -1478,7 +1681,7 @@ app.get('/admin/teacher-availability', (req, res) => {
   ok(res, availability || null);
 });
 
-app.put('/admin/teacher-availability', (req, res) => {
+app.put('/admin/teacher-availability', requireAdmin, (req, res) => {
   const slotSchema = z.object({
     startTime: z.string(),
     status: z.enum(['open', 'closed']).default('open'),
@@ -1506,7 +1709,7 @@ app.put('/admin/teacher-availability', (req, res) => {
   ok(res, availability);
 });
 
-app.post('/admin/teacher-availability/bulk', (req, res) => {
+app.post('/admin/teacher-availability/bulk', requireAdmin, (req, res) => {
   const slotSchema = z.object({
     startTime: z.string(),
     status: z.enum(['open', 'closed']).default('open'),
@@ -1546,7 +1749,8 @@ app.post('/admin/teacher-availability/bulk', (req, res) => {
   ok(res, { count: data.length, data });
 });
 
-app.post('/admin/trial-appointments', (req, res) => {
+app.post('/admin/trial-appointments', requireAdmin, (req, res) => {
+  if (!requireAdminConfirmation(req, res)) return;
   const parsed = z.object({
     teacherId: z.string(),
     campusId: z.string(),
@@ -1563,9 +1767,10 @@ app.post('/admin/trial-appointments', (req, res) => {
   ok(res, appointmentView(result.appointment));
 });
 
-app.post('/appointments/:appointmentId/cancel', (req, res) => {
+app.post('/appointments/:appointmentId/cancel', requireStudent, (req, res) => {
   const appointment = store.appointments.find((item) => item.id === req.params.appointmentId);
   if (!appointment) return fail(res, 404, '预约不存在');
+  if (appointment.student_id !== req.mobileProfile.id) return fail(res, 403, '无权取消其他学员预约');
   if (appointment.status !== 'booked') return fail(res, 409, '当前预约不可取消');
   if (!canSelfChange(appointment.date, appointment.start_time)) {
     return fail(res, 409, '距离开课不足 1.5 小时，请联系老师处理');
@@ -1577,12 +1782,14 @@ app.post('/appointments/:appointmentId/cancel', (req, res) => {
   ok(res, appointment);
 });
 
-app.get('/teachers', (req, res) => {
-  const data = store.teachers.filter((item) => item.status === 'active' && (!req.query.campusId || item.campus_id === req.query.campusId));
+app.get('/teachers', requireTeacher, (req, res) => {
+  const data = store.teachers.filter((item) => item.status === 'active' && item.campus_id === req.mobileProfile.campus_id);
   ok(res, data);
 });
 
-app.get('/teachers/:teacherId/schedule', (req, res) => {
+app.get('/teachers/:teacherId/schedule', requireTeacher, (req, res) => {
+  const targetTeacher = store.teachers.find((item) => item.id === req.params.teacherId && item.status === 'active');
+  if (!targetTeacher || targetTeacher.campus_id !== req.mobileProfile.campus_id) return fail(res, 403, '只能查看同校区老师课表');
   const date = req.query.date || dayjs().format('YYYY-MM-DD');
   const availability = availabilityForDate(req.params.teacherId, date);
   const appointments = store.appointments
@@ -1604,7 +1811,8 @@ app.get('/teachers/:teacherId/schedule', (req, res) => {
   });
 });
 
-app.get('/teachers/:teacherId/students', (req, res) => {
+app.get('/teachers/:teacherId/students', requireTeacher, (req, res) => {
+  if (req.params.teacherId !== req.mobileProfile.id) return fail(res, 403, '无权查看其他老师的学员');
   const keyword = String(req.query.keyword || '').trim();
   const filter = String(req.query.filter || 'active');
   const data = store.bindings
@@ -1634,7 +1842,7 @@ app.get('/teachers/:teacherId/students', (req, res) => {
   ok(res, data);
 });
 
-app.post('/lesson-records', (req, res) => {
+app.post('/lesson-records', requireTeacher, (req, res) => {
   const parsed = z.object({
     appointmentId: z.string(),
     content: z.string().min(1),
@@ -1646,6 +1854,7 @@ app.post('/lesson-records', (req, res) => {
   if (!parsed.success) return fail(res, 400, '学习内容为必填项');
   const appointment = store.appointments.find((item) => item.id === parsed.data.appointmentId);
   if (!appointment) return fail(res, 404, '预约不存在');
+  if (appointment.teacher_id !== req.mobileProfile.id) return fail(res, 403, '无权填写其他老师的上课记录');
   if (appointment.status !== 'booked') return fail(res, 409, '只有待上课预约可确认完成');
   const contract = contractById(appointment.contract_id);
   const nextCompleted = Number(contract.completed_lessons || 0) + 1;
@@ -1682,14 +1891,14 @@ app.post('/lesson-records', (req, res) => {
   ok(res, record);
 });
 
-app.get('/lesson-records', (req, res) => {
+app.get('/lesson-records', requireTeacherOrStudent, (req, res) => {
   let data = store.lessonRecords;
-  if (req.query.studentId) data = data.filter((item) => item.student_id === req.query.studentId);
-  if (req.query.teacherId) data = data.filter((item) => item.teacher_id === req.query.teacherId);
+  if (req.mobileAccess.role === 'student') data = data.filter((item) => item.student_id === req.mobileProfile.id);
+  if (req.mobileAccess.role === 'teacher') data = data.filter((item) => item.teacher_id === req.mobileProfile.id);
   ok(res, data.map(enrichRecord).sort((a, b) => `${b.date} ${b.start_time}`.localeCompare(`${a.date} ${a.start_time}`)));
 });
 
-app.get('/stats/teacher-monthly', (req, res) => {
+app.get('/stats/teacher-monthly', requireAdmin, (req, res) => {
   const month = req.query.month || dayjs().format('YYYY-MM');
   const data = store.teachers.map((teacher) => {
     const records = store.lessonRecords.filter((item) => item.teacher_id === teacher.id && item.date.startsWith(month));

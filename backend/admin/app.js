@@ -13,8 +13,10 @@ const state = {
   inspectors: [],
   slots: [],
   monthlyHours: [],
-  editContext: null
+  editContext: null,
+  selectedAppointmentIds: new Set()
 };
+let confirmationResolver = null;
 
 const el = (id) => document.getElementById(id);
 
@@ -34,7 +36,9 @@ async function api(path, options = {}) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 401) showLogin();
-    throw new Error(payload.error?.message || '请求失败');
+    const error = new Error(payload.error?.message || '请求失败');
+    error.status = response.status;
+    throw error;
   }
   return payload.data;
 }
@@ -118,6 +122,27 @@ function formJson(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+function requestSensitiveConfirmation({ title, detail, confirmText = '确认操作', reason = '' }) {
+  el('confirmTitle').textContent = title;
+  el('confirmDetail').textContent = detail;
+  el('confirmSubmitBtn').textContent = confirmText;
+  el('confirmPassword').value = '';
+  el('confirmReason').value = reason;
+  el('confirmReasonField').classList.toggle('hidden', !reason);
+  el('confirmOverlay').classList.remove('hidden');
+  setTimeout(() => el(reason ? 'confirmReason' : 'confirmPassword').focus(), 0);
+  return new Promise((resolve) => {
+    confirmationResolver = resolve;
+  });
+}
+
+function closeSensitiveConfirmation(result = null) {
+  el('confirmOverlay').classList.add('hidden');
+  const resolve = confirmationResolver;
+  confirmationResolver = null;
+  if (resolve) resolve(result);
+}
+
 function fileToDataUrl(file) {
   if (!file || !file.size) return Promise.resolve('');
   return new Promise((resolve, reject) => {
@@ -195,8 +220,8 @@ function renderCourseStats() {
 }
 
 function renderTodayAppointments() {
-  const appointments = state.dashboard?.todayAppointments || [];
-  el('todayAppointmentsBody').innerHTML = appointments.map((item) => `
+  const appointments = state.dashboard?.scheduleAppointments || state.dashboard?.todayAppointments || [];
+  el('todayAppointmentsBody').innerHTML = appointments.length ? appointments.map((item) => `
     <tr>
       <td>${item.start_time || '-'}-${item.end_time || '-'}</td>
       <td>${item.student_name || '-'}</td>
@@ -205,7 +230,7 @@ function renderTodayAppointments() {
       <td>${appointmentSourceLabel(item)}</td>
       <td><span class="tag">${appointmentStatusLabel(item.status)}</span></td>
     </tr>
-  `).join('');
+  `).join('') : '<tr><td colspan="6" class="empty-cell">该日期暂无课程安排</td></tr>';
 }
 
 function renderAppointments() {
@@ -227,6 +252,7 @@ function renderAppointments() {
 function renderAppointmentSync() {
   el('appointmentSyncBody').innerHTML = state.appointments.map((item) => `
     <tr>
+      <td class="select-cell">${item.status === 'booked' ? `<input type="checkbox" data-select-appointment="${item.id}" ${state.selectedAppointmentIds.has(item.id) ? 'checked' : ''} aria-label="选择${escapeHtml(item.student_name || '课程')}" />` : ''}</td>
       <td>${item.date || '-'}</td>
       <td>${item.start_time || '-'}-${item.end_time || '-'}</td>
       <td>${item.student_name || '-'}</td>
@@ -235,9 +261,20 @@ function renderAppointmentSync() {
       <td>${appointmentSourceLabel(item) || item.sync_source || '-'}</td>
       <td><span class="tag">${item.synced_to_teacher ? '已同步' : '未绑定'}</span></td>
       <td><span class="tag">${appointmentStatusLabel(item.status)}</span></td>
-      <td>${item.status === 'booked' ? `<button type="button" class="link-btn danger-link" data-cancel-appointment="${item.id}">取消</button>` : '-'}</td>
+      <td>${item.status === 'booked' ? `<button type="button" class="table-action danger-action" data-cancel-appointment="${item.id}">取消</button>` : '-'}</td>
     </tr>
   `).join('');
+  syncBatchSelectionUi();
+}
+
+function syncBatchSelectionUi() {
+  const bookedIds = state.appointments.filter((item) => item.status === 'booked').map((item) => item.id);
+  state.selectedAppointmentIds = new Set([...state.selectedAppointmentIds].filter((id) => bookedIds.includes(id)));
+  const selectedCount = state.selectedAppointmentIds.size;
+  el('batchCancelBtn').disabled = !selectedCount;
+  el('batchCancelBtn').textContent = selectedCount ? `批量取消所选（${selectedCount}）` : '批量取消所选';
+  el('selectAllAppointments').checked = Boolean(bookedIds.length) && bookedIds.every((id) => state.selectedAppointmentIds.has(id));
+  el('selectAllAppointments').indeterminate = selectedCount > 0 && selectedCount < bookedIds.length;
 }
 
 function renderAccessUsers() {
@@ -251,7 +288,7 @@ function renderAccessUsers() {
       <td>${item.campus_name || '-'}</td>
       <td><span class="tag">${item.status === 'inactive' ? '停用' : '允许访问'}</span></td>
       <td>${item.notes || '-'}</td>
-      <td><button type="button" class="link-btn" data-edit="access" data-id="${item.id}">编辑</button></td>
+      <td><button type="button" class="table-action" data-edit="access" data-id="${item.id}">编辑</button></td>
     </tr>
   `).join('');
 }
@@ -269,7 +306,7 @@ function renderStudents() {
       <td>${student.remaining_lessons ?? '按册'}</td>
       <td>${student.expires_at || '-'}</td>
       <td><span class="tag">${statusLabel(student.payment_status)}</span></td>
-      <td><button type="button" class="link-btn" data-edit="student" data-id="${student.binding_id}">编辑</button></td>
+      <td><button type="button" class="table-action" data-edit="student" data-id="${student.binding_id}">编辑</button></td>
     </tr>
   `).join('');
 }
@@ -284,7 +321,7 @@ function renderTeachers() {
       <td>${(teacher.courses || []).join('、') || '-'}</td>
       <td>${teacher.student_count}</td>
       <td><span class="tag">${teacherStatusLabel(teacher.status)}</span></td>
-      <td><button type="button" class="link-btn" data-edit="teacher" data-id="${teacher.id}">编辑</button></td>
+      <td><button type="button" class="table-action" data-edit="teacher" data-id="${teacher.id}">编辑</button></td>
     </tr>
   `).join('');
 }
@@ -299,7 +336,7 @@ function renderCampuses() {
       <td>${campus.hours || '-'}</td>
       <td><span class="tag">${addressStatusLabel(campus.status || 'active')}</span></td>
       <td>${campus.latitude && campus.longitude ? `${campus.latitude}, ${campus.longitude}` : (campus.map_keyword || '-')}</td>
-      <td><button type="button" class="link-btn" data-edit="campus" data-id="${campus.id}">编辑</button></td>
+      <td><button type="button" class="table-action" data-edit="campus" data-id="${campus.id}">编辑</button></td>
     </tr>
   `).join('');
 }
@@ -481,6 +518,7 @@ function renderAdminBookingBindings() {
     .filter((student) => student.status === 'active')
     .map((student) => `<option value="${student.student_id}|${student.binding_id}">${student.name} · ${student.course || '-'} · ${student.teacher_name || '-'}</option>`);
   el('adminBookingBinding').innerHTML = options.join('');
+  el('batchBookingBinding').innerHTML = options.join('');
 }
 
 function syncAdminBookingMode() {
@@ -508,12 +546,13 @@ function renderSlots() {
   const html = state.slots.map((slot) => `
     <label class="slot-option">
       <input type="checkbox" name="startTimes" value="${slot.startTime}" />
-      ${slot.startTime}-${slot.endTime}
+      <span>${slot.startTime}<small>${slot.endTime}</small></span>
     </label>
   `).join('');
   el('fixedSlotCheckboxes').innerHTML = html;
   el('lockSlotCheckboxes').innerHTML = html;
   el('adminBookingStartTime').innerHTML = state.slots.map((slot) => `<option value="${slot.startTime}">${slot.startTime}-${slot.endTime}</option>`).join('');
+  el('batchBookingStartTime').innerHTML = state.slots.map((slot) => `<option value="${slot.startTime}">${slot.startTime}-${slot.endTime}</option>`).join('');
 }
 
 function renderMonthlyHours() {
@@ -548,8 +587,21 @@ function setView(view) {
   if (view === 'schedule') loadMonthlyHours();
 }
 
+function localDateValue(date = new Date()) {
+  const offset = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function updateDashboardScheduleHeading() {
+  const selectedDate = el('dashboardScheduleDate').value;
+  const today = localDateValue();
+  el('dashboardScheduleTitle').textContent = selectedDate === today ? '今日课表' : `${selectedDate || today} 课表`;
+}
+
 async function loadDashboard() {
-  state.dashboard = await api('/admin/api/dashboard');
+  if (!el('dashboardScheduleDate').value) el('dashboardScheduleDate').value = localDateValue();
+  const date = el('dashboardScheduleDate').value;
+  state.dashboard = await api(`/admin/api/dashboard?date=${encodeURIComponent(date)}`);
   renderMetrics(state.dashboard.counts);
   renderStudentStats();
   renderReleaseInfo();
@@ -557,6 +609,7 @@ async function loadDashboard() {
   renderTodayAppointments();
   renderTeacherStats();
   renderAppointments();
+  updateDashboardScheduleHeading();
 }
 
 async function loadCourses() {
@@ -584,10 +637,12 @@ async function loadSlots() {
 async function loadAppointments() {
   const params = new URLSearchParams({
     date: el('appointmentDate').value,
+    studentKeyword: el('appointmentStudentKeyword').value.trim(),
     teacherId: el('appointmentTeacher').value,
     status: el('appointmentStatus').value
   });
   state.appointments = await api(`/admin/api/appointments?${params.toString()}`);
+  state.selectedAppointmentIds.clear();
   renderAppointmentSync();
 }
 
@@ -669,12 +724,61 @@ el('logoutBtn').addEventListener('click', async () => {
 });
 
 el('refreshBtn').addEventListener('click', loadAll);
+el('dashboardScheduleDate').addEventListener('change', loadDashboard);
+el('dashboardTodayBtn').addEventListener('click', () => {
+  el('dashboardScheduleDate').value = localDateValue();
+  loadDashboard();
+});
+function stepDashboardDate(days) {
+  const current = new Date(`${el('dashboardScheduleDate').value || localDateValue()}T12:00:00`);
+  current.setDate(current.getDate() + days);
+  el('dashboardScheduleDate').value = localDateValue(current);
+  loadDashboard();
+}
+el('dashboardPreviousDate').addEventListener('click', () => stepDashboardDate(-1));
+el('dashboardNextDate').addEventListener('click', () => stepDashboardDate(1));
 el('studentKeyword').addEventListener('input', () => loadStudents());
 el('studentTeacher').addEventListener('change', loadStudents);
 el('studentStatus').addEventListener('change', loadStudents);
 el('appointmentDate').addEventListener('change', loadAppointments);
+el('appointmentStudentKeyword').addEventListener('input', loadAppointments);
 el('appointmentTeacher').addEventListener('change', loadAppointments);
 el('appointmentStatus').addEventListener('change', loadAppointments);
+el('selectAllAppointments').addEventListener('change', (event) => {
+  state.selectedAppointmentIds.clear();
+  if (event.currentTarget.checked) {
+    state.appointments.filter((item) => item.status === 'booked').forEach((item) => state.selectedAppointmentIds.add(item.id));
+  }
+  renderAppointmentSync();
+});
+el('batchCancelBtn').addEventListener('click', async () => {
+  const selected = state.appointments.filter((item) => state.selectedAppointmentIds.has(item.id));
+  if (!selected.length) return;
+  const names = [...new Set(selected.map((item) => item.student_name))];
+  const confirmation = await requestSensitiveConfirmation({
+    title: '确认批量取消课程',
+    detail: `将取消 ${selected.length} 节待上课课程，包含 ${names.slice(0, 4).join('、')}${names.length > 4 ? '等学员' : ''}。`,
+    confirmText: `确认取消 ${selected.length} 节`,
+    reason: '后台批量取消'
+  });
+  if (!confirmation) return;
+  try {
+    const result = await api('/admin/api/appointments/batch-cancel', {
+      method: 'POST',
+      body: JSON.stringify({
+        appointmentIds: selected.map((item) => item.id),
+        reason: confirmation.reason,
+        confirmationPassword: confirmation.password
+      })
+    });
+    window.alert(`批量取消完成：成功 ${result.cancelled.length} 节，跳过 ${result.skipped.length} 节`);
+    state.selectedAppointmentIds.clear();
+    await loadDashboard();
+    await loadAppointments();
+  } catch (error) {
+    window.alert(error.message);
+  }
+});
 el('loadHoursBtn').addEventListener('click', loadMonthlyHours);
 el('hoursMonth').addEventListener('change', loadMonthlyHours);
 el('accessForm').elements.role.addEventListener('change', (event) => {
@@ -692,6 +796,16 @@ el('adminBookingForm').addEventListener('submit', async (event) => {
   try {
     const isTrial = el('adminBookingType').value === 'trial';
     const data = formJson(event.currentTarget);
+    const studentLabel = isTrial
+      ? (data.studentName || '体验学员')
+      : (el('adminBookingBinding').selectedOptions[0]?.textContent || '所选学员');
+    const confirmation = await requestSensitiveConfirmation({
+      title: isTrial ? '确认创建体验课' : '确认后台代约',
+      detail: `${studentLabel}，${data.date} ${data.startTime}。提交后会立即占用老师课表。`,
+      confirmText: '确认并创建课程'
+    });
+    if (!confirmation) return;
+    data.confirmationPassword = confirmation.password;
     let result;
     if (isTrial) {
       data.notes = data.note;
@@ -710,6 +824,45 @@ el('adminBookingForm').addEventListener('submit', async (event) => {
     await loadDashboard();
     await loadAppointments();
     await loadStudents();
+  } catch (error) {
+    message.textContent = error.message;
+    if (error.status === 409) window.alert(`无法预约：${error.message}`);
+  }
+});
+
+el('batchBookingForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = el('batchBookingMessage');
+  const results = el('batchBookingResults');
+  const data = formJson(form);
+  const [studentId, bindingId] = String(data.studentBinding || '').split('|');
+  data.studentId = studentId;
+  data.bindingId = bindingId;
+  delete data.studentBinding;
+  data.weekdays = [...form.querySelectorAll('input[name="weekdays"]:checked')].map((input) => input.value);
+  if (!data.weekdays.length) {
+    message.textContent = '请至少选择一个预约星期';
+    return;
+  }
+  const studentLabel = el('batchBookingBinding').selectedOptions[0]?.textContent || '所选学员';
+  const confirmation = await requestSensitiveConfirmation({
+    title: '确认批量预约',
+    detail: `${studentLabel}，${data.startDate} 至 ${data.endDate}，固定时段 ${data.startTime}。冲突日期会跳过，其余日期立即创建。`,
+    confirmText: '确认批量预约'
+  });
+  if (!confirmation) return;
+  data.confirmationPassword = confirmation.password;
+  try {
+    const result = await api('/admin/api/appointments/batch', { method: 'POST', body: JSON.stringify(data) });
+    message.textContent = `共处理 ${result.requested} 个日期，成功 ${result.created.length} 个，跳过 ${result.conflicts.length} 个`;
+    results.classList.remove('hidden');
+    results.innerHTML = `
+      ${result.created.length ? `<div class="batch-result success-result"><strong>预约成功</strong><span>${result.created.map((item) => `${item.date} ${item.start_time}`).join('、')}</span></div>` : ''}
+      ${result.conflicts.length ? `<div class="batch-result conflict-result"><strong>未预约</strong>${result.conflicts.map((item) => `<span>${escapeHtml(item.date)}：${escapeHtml(item.message)}</span>`).join('')}</div>` : ''}
+    `;
+    await loadDashboard();
+    await loadAppointments();
   } catch (error) {
     message.textContent = error.message;
   }
@@ -830,17 +983,21 @@ el('lockForm').addEventListener('submit', async (event) => {
 el('backupBtn').addEventListener('click', async () => {
   const message = el('backupMessage');
   message.textContent = '正在备份...';
+  el('backupBtn').disabled = true;
   try {
     const result = await api('/admin/api/backups', { method: 'POST' });
     message.textContent = `备份已生成：${result.backup_path}`;
   } catch (error) {
     message.textContent = error.message;
+  } finally {
+    el('backupBtn').disabled = false;
   }
 });
 
 el('exportBtn').addEventListener('click', async () => {
   const message = el('exportMessage');
   message.textContent = '正在导出...';
+  el('exportBtn').disabled = true;
   try {
     const result = await api('/admin/api/export');
     const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
@@ -852,22 +1009,41 @@ el('exportBtn').addEventListener('click', async () => {
     message.textContent = '导出文件已开始下载';
   } catch (error) {
     message.textContent = error.message;
+  } finally {
+    el('exportBtn').disabled = false;
   }
 });
 
 document.addEventListener('click', (event) => {
+  const appointmentCheckbox = event.target.closest('[data-select-appointment]');
+  if (appointmentCheckbox) {
+    if (appointmentCheckbox.checked) state.selectedAppointmentIds.add(appointmentCheckbox.dataset.selectAppointment);
+    else state.selectedAppointmentIds.delete(appointmentCheckbox.dataset.selectAppointment);
+    syncBatchSelectionUi();
+    return;
+  }
   const cancelButton = event.target.closest('[data-cancel-appointment]');
   if (cancelButton) {
-    const reason = window.prompt('请输入取消原因', '后台取消');
-    if (reason === null) return;
-    api(`/admin/api/appointments/${cancelButton.dataset.cancelAppointment}/cancel`, {
-      method: 'POST',
-      body: JSON.stringify({ reason })
-    }).then(async () => {
-      await loadDashboard();
-      await loadAppointments();
-    }).catch((error) => {
-      window.alert(error.message);
+    const appointment = state.appointments.find((item) => item.id === cancelButton.dataset.cancelAppointment);
+    requestSensitiveConfirmation({
+      title: '确认取消课程',
+      detail: `${appointment?.student_name || '该学员'}，${appointment?.date || ''} ${appointment?.start_time || ''}-${appointment?.end_time || ''}。取消后该时段会重新释放。`,
+      confirmText: '确认取消课程',
+      reason: '后台取消'
+    }).then((confirmation) => {
+      if (!confirmation) return;
+      api(`/admin/api/appointments/${cancelButton.dataset.cancelAppointment}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({
+          reason: confirmation.reason,
+          confirmationPassword: confirmation.password
+        })
+      }).then(async () => {
+        await loadDashboard();
+        await loadAppointments();
+      }).catch((error) => {
+        window.alert(error.message);
+      });
     });
     return;
   }
@@ -880,6 +1056,17 @@ document.addEventListener('click', (event) => {
 el('editCloseBtn').addEventListener('click', closeEditModal);
 el('editOverlay').addEventListener('click', (event) => {
   if (event.target === el('editOverlay')) closeEditModal();
+});
+el('confirmCancelBtn').addEventListener('click', () => closeSensitiveConfirmation());
+el('confirmOverlay').addEventListener('click', (event) => {
+  if (event.target === el('confirmOverlay')) closeSensitiveConfirmation();
+});
+el('confirmForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  closeSensitiveConfirmation({
+    password: el('confirmPassword').value,
+    reason: el('confirmReason').value.trim()
+  });
 });
 
 el('editForm').addEventListener('submit', async (event) => {

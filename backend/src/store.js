@@ -36,6 +36,23 @@ export function createInitialData() {
         display_order: 1,
         contact_person: '',
         map_keyword: '长春市净月区御翠园小区别墅区'
+      },
+      {
+        id: 'campus-54c723ed85',
+        name: '菠菜现代音乐二店（融创上城）',
+        short_name: '二店',
+        address: '长春市高新区融创上城二期别墅区',
+        phone: '请联系校区老师',
+        latitude: null,
+        longitude: null,
+        hours: '周二至周日 12:00-20:00',
+        image: '/assets/brand/brand-display.png',
+        release_time: '20:00',
+        desc: '二店位于融创上城二期别墅区',
+        status: 'active',
+        display_order: 2,
+        contact_person: '',
+        map_keyword: '长春市高新区融创上城二期别墅区'
       }
     ],
     users: [
@@ -104,7 +121,8 @@ export function loadStore() {
   const enriched = enrichSparseSchedule(data);
   const inspectorReady = ensureInspectorAccess(data);
   const managerReady = ensureManagerAccess(data);
-  if (pruned || enriched || inspectorReady || managerReady) saveStore(data);
+  const campusReady = ensureCampusDetails(data);
+  if (pruned || enriched || inspectorReady || managerReady || campusReady) saveStore(data);
   return data;
 }
 
@@ -114,6 +132,17 @@ export function saveStore(store) {
 }
 
 export const store = loadStore();
+
+function ensureCampusDetails(data) {
+  const secondCampus = (data.campuses || []).find((item) => item.short_name === '二店' || String(item.name || '').includes('融创上城'));
+  if (!secondCampus) return false;
+  const address = '长春市高新区融创上城二期别墅区';
+  const before = JSON.stringify(secondCampus);
+  if (!secondCampus.address || secondCampus.address.includes('待')) secondCampus.address = address;
+  if (!secondCampus.map_keyword || secondCampus.map_keyword.includes('待')) secondCampus.map_keyword = address;
+  if (!secondCampus.desc || secondCampus.desc.includes('待补充')) secondCampus.desc = '二店位于融创上城二期别墅区';
+  return before !== JSON.stringify(secondCampus);
+}
 
 function ensureInspectorAccess(data) {
   data.accessUsers ||= [];
@@ -126,8 +155,8 @@ function ensureInspectorAccess(data) {
       const before = JSON.stringify(existing);
       existing.role = item.role;
       existing.profile_id ||= item.profile_id;
-      existing.name ||= item.name;
-      existing.phone ||= item.phone;
+      existing.name = item.name;
+      existing.phone = item.phone;
       existing.status ||= item.status;
       existing.notes ||= item.notes;
       changed = changed || before !== JSON.stringify(existing);

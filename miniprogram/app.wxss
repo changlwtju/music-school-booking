@@ -130,6 +130,38 @@ textarea {
   background: rgba(83, 157, 115, 0.08);
 }
 
+.inspector-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-bottom: 20rpx;
+  padding: 20rpx 22rpx;
+  border: 2rpx solid rgba(42, 103, 144, 0.22);
+  border-radius: 8rpx;
+  background: rgba(246, 251, 252, 0.96);
+}
+
+.inspector-title {
+  color: #1F3D32;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.inspector-picker {
+  min-width: 260rpx;
+  max-width: 360rpx;
+  padding: 14rpx 18rpx;
+  border-radius: 8rpx;
+  background: #2A6790;
+  color: #fff;
+  font-size: 24rpx;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sync-banner {
   margin: 18rpx 0;
   padding: 22rpx;

@@ -7,6 +7,15 @@
     </view>
   </view>
   <image class="hero-image" src="/assets/brand/brand-display.jpg" mode="widthFix" />
+  <view wx:if="{{isInspector}}" class="inspector-switch">
+    <view>
+      <view class="inspector-title">巡检老师档案</view>
+      <view class="meta">仅开发巡检可见，可切换任意老师视角</view>
+    </view>
+    <picker mode="selector" range="{{inspectorLabels}}" value="{{activeInspectorIndex}}" bindchange="switchInspectorProfile">
+      <view class="inspector-picker">{{inspectorLabels[activeInspectorIndex] || '选择老师档案'}}</view>
+    </picker>
+  </view>
   <view class="grid">
     <view class="entry" bindtap="goSchedule"><image class="entry-icon" src="/assets/icons/entry-calendar.png" mode="aspectFit" /><view class="entry-title">今日课表</view><view class="entry-desc">查看门店排课</view></view>
     <view class="entry" bindtap="goMembers"><image class="entry-icon" src="/assets/icons/entry-members.png" mode="aspectFit" /><view class="entry-title">会员管理</view><view class="entry-desc">搜索学员信息</view></view>

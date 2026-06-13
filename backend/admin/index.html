@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>菠菜现代音乐后台</title>
+  <link rel="icon" href="/assets/brand/avatar.png" type="image/png" />
   <link rel="stylesheet" href="/admin/styles.css" />
 </head>
 <body>
@@ -58,12 +59,18 @@
 
     <section class="workspace">
       <header class="topbar">
-        <div>
+        <div class="topbar-copy">
           <h2 id="pageTitle">总览</h2>
           <p id="pageSubtitle">服务器运行数据</p>
         </div>
-        <img src="/assets/brand/brand-display.jpg" alt="" class="topbar-brand-image" />
-        <button id="refreshBtn" class="secondary-btn">刷新</button>
+        <div class="topbar-brand">
+          <img src="/assets/brand/avatar.png" alt="" />
+          <div>
+            <strong>菠菜现代音乐</strong>
+            <span>Music School Admin</span>
+          </div>
+        </div>
+        <button id="refreshBtn" class="icon-btn"><span aria-hidden="true">↻</span>刷新数据</button>
       </header>
 
       <section id="dashboardView" class="view">
@@ -78,7 +85,18 @@
             <div id="releaseInfo" class="release-box"></div>
           </section>
         </div>
-        <h3>今日课表</h3>
+        <div class="section-heading schedule-heading">
+          <div>
+            <h3 id="dashboardScheduleTitle">今日课表</h3>
+            <p>用于快速查看某一天的全部课程，更多条件请前往“课表”页面。</p>
+          </div>
+          <div class="date-filter">
+            <button id="dashboardPreviousDate" type="button" class="date-step" aria-label="前一天">‹</button>
+            <input id="dashboardScheduleDate" type="date" aria-label="课表日期" />
+            <button id="dashboardNextDate" type="button" class="date-step" aria-label="后一天">›</button>
+            <button id="dashboardTodayBtn" type="button" class="ghost-btn">今天</button>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -148,7 +166,7 @@
             <label><span>当前进度</span><input name="progress" /></label>
             <label><span>合同附件</span><input name="attachmentFile" type="file" accept=".pdf,image/*" /></label>
             <label><span>合同附件 URL</span><input name="attachmentUrl" placeholder="已有线上附件可填 URL" /></label>
-            <label class="span-2"><span>备注</span><textarea name="notes" rows="2"></textarea></label>
+            <label><span>备注</span><textarea name="notes" rows="2"></textarea></label>
             <button type="submit">保存学员</button>
             <p id="studentFormMessage" class="form-message"></p>
           </form>
@@ -264,7 +282,10 @@
       <section id="accessView" class="view hidden">
         <div class="form-card open-card">
           <h3>前端巡检账号</h3>
-          <p>同一个巡检手机号可分别进入学员端和老师端；后续正式微信登录后，可在这里绑定对应微信 OpenID。</p>
+          <div class="notice-box">
+            <strong>它是测试映射，不是借用真实账号权限</strong>
+            <p>同一个巡检手机号进入学员端或老师端时，系统分别读取下方选中的档案，用于检查该角色看到的课表和资料。它不会取得老师或学生的微信登录凭证，也不会改变对方账号权限。</p>
+          </div>
           <form id="inspectorForm" class="admin-form">
             <label><span>显示姓名</span><input name="name" /></label>
             <label><span>巡检手机号</span><input name="phone" /></label>
@@ -273,7 +294,7 @@
             <label><span>学生端微信 OpenID</span><input name="studentWechatOpenid" placeholder="正式微信登录后填写" /></label>
             <label><span>老师端微信 OpenID</span><input name="teacherWechatOpenid" placeholder="正式微信登录后填写" /></label>
             <label><span>状态</span><select name="status"><option value="active">允许访问</option><option value="inactive">停用</option></select></label>
-            <label class="span-2"><span>备注</span><input name="notes" placeholder="例如前端巡检账号" /></label>
+            <label><span>备注</span><input name="notes" placeholder="例如前端巡检账号" /></label>
             <button type="submit">保存巡检账号</button>
             <p id="inspectorFormMessage" class="form-message"></p>
           </form>
@@ -287,7 +308,7 @@
             <label><span>登录手机号</span><input name="phone" required /></label>
             <label><span>微信 OpenID</span><input name="wechatOpenid" placeholder="正式微信登录后填写" /></label>
             <label><span>状态</span><select name="status"><option value="active">允许访问</option><option value="inactive">停用</option></select></label>
-            <label class="span-2"><span>备注</span><input name="notes" placeholder="例如体验账号、家长手机号等" /></label>
+            <label><span>备注</span><input name="notes" placeholder="例如体验账号、家长手机号等" /></label>
             <button type="submit">保存权限</button>
             <p id="accessFormMessage" class="form-message"></p>
           </form>
@@ -331,6 +352,36 @@
             <p id="adminBookingMessage" class="form-message"></p>
           </form>
         </div>
+        <details class="form-card">
+          <summary>批量预约课程</summary>
+          <div class="details-copy">
+            <p>适合为某个学员连续预约多周固定课程。系统会跳过已占用、老师请假、周一休息等冲突日期，并返回逐条结果。</p>
+          </div>
+          <form id="batchBookingForm" class="admin-form">
+            <label class="span-2"><span>学员课程</span><select name="studentBinding" id="batchBookingBinding" required></select></label>
+            <label><span>开始日期</span><input name="startDate" type="date" required /></label>
+            <label><span>结束日期</span><input name="endDate" type="date" required /></label>
+            <label><span>固定时段</span><select name="startTime" id="batchBookingStartTime" required></select></label>
+            <label><span>备注</span><input name="note" placeholder="例如每周固定课、集中补课" /></label>
+            <div class="span-all">
+              <div class="field-heading">
+                <span class="field-title">预约星期</span>
+                <span>日期范围最长 90 天</span>
+              </div>
+              <div class="slot-grid weekday-grid">
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="2" checked /><span>周二</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="3" /><span>周三</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="4" /><span>周四</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="5" /><span>周五</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="6" /><span>周六</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="0" /><span>周日</span></label>
+              </div>
+            </div>
+            <button type="submit">预览并批量预约</button>
+            <p id="batchBookingMessage" class="form-message"></p>
+            <div id="batchBookingResults" class="span-all batch-results hidden"></div>
+          </form>
+        </details>
         <div class="form-card open-card">
           <h3>固定课表导入</h3>
           <p>导入后，所选星期和时段为可约课；未选时段会关闭为“非固定上课时间”。学生端仍按每天 20:00 自动释放次日课表。</p>
@@ -339,20 +390,26 @@
             <label><span>校区</span><select name="campusId" class="campus-select" required></select></label>
             <label><span>开始日期</span><input name="startDate" type="date" required /></label>
             <label><span>结束日期</span><input name="endDate" type="date" required /></label>
-            <div class="span-2">
-              <span class="field-title">固定上课星期</span>
-              <div class="slot-grid">
-                <label class="slot-option"><input type="checkbox" name="weekdays" value="2" checked />周二</label>
-                <label class="slot-option"><input type="checkbox" name="weekdays" value="3" checked />周三</label>
-                <label class="slot-option"><input type="checkbox" name="weekdays" value="4" checked />周四</label>
-                <label class="slot-option"><input type="checkbox" name="weekdays" value="5" checked />周五</label>
-                <label class="slot-option"><input type="checkbox" name="weekdays" value="6" checked />周六</label>
-                <label class="slot-option"><input type="checkbox" name="weekdays" value="0" checked />周日</label>
+            <div class="span-all">
+              <div class="field-heading">
+                <span class="field-title">固定上课星期</span>
+                <span>点击卡片选择，可多选</span>
+              </div>
+              <div class="slot-grid weekday-grid">
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="2" checked /><span>周二</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="3" checked /><span>周三</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="4" checked /><span>周四</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="5" checked /><span>周五</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="6" checked /><span>周六</span></label>
+                <label class="slot-option weekday-option"><input type="checkbox" name="weekdays" value="0" checked /><span>周日</span></label>
               </div>
             </div>
             <label class="span-2"><span>关闭原因</span><input name="reason" value="非固定上课时间" /></label>
-            <div class="span-2">
-              <span class="field-title">固定可约时段</span>
+            <div class="span-all">
+              <div class="field-heading">
+                <span class="field-title">固定可约时段</span>
+                <span>未选时段将按关闭原因处理</span>
+              </div>
               <div id="fixedSlotCheckboxes" class="slot-grid"></div>
             </div>
             <button type="submit">导入固定课表</button>
@@ -367,17 +424,27 @@
             <label><span>校区</span><select name="campusId" class="campus-select" required></select></label>
             <label><span>日期</span><input name="date" type="date" required /></label>
             <label><span>原因</span><input name="reason" value="老师临时请假" /></label>
-            <div class="span-2">
-              <span class="field-title">需要锁定的时段</span>
+            <div class="span-all">
+              <div class="field-heading">
+                <span class="field-title">需要锁定的时段</span>
+                <span>只影响所选日期和老师</span>
+              </div>
               <div id="lockSlotCheckboxes" class="slot-grid"></div>
             </div>
             <button type="submit">锁定所选时段</button>
             <p id="lockFormMessage" class="form-message"></p>
           </form>
         </div>
-        <h3>后台约课同步记录</h3>
-        <div class="filters">
+        <div class="section-heading">
+          <div>
+            <h3>后台约课同步记录</h3>
+            <p>可勾选当前筛选结果中的待上课课程进行批量取消。</p>
+          </div>
+          <button id="batchCancelBtn" type="button" class="batch-danger-btn" disabled>批量取消所选</button>
+        </div>
+        <div class="filters appointment-filters">
           <input id="appointmentDate" type="date" />
+          <input id="appointmentStudentKeyword" placeholder="搜索学员姓名" />
           <select id="appointmentTeacher"></select>
           <select id="appointmentStatus">
             <option value="">全部状态</option>
@@ -390,6 +457,7 @@
           <table>
             <thead>
               <tr>
+                <th class="select-cell"><input id="selectAllAppointments" type="checkbox" aria-label="选择当前全部待上课课程" /></th>
                 <th>日期</th>
                 <th>时间</th>
                 <th>学员</th>
@@ -452,16 +520,18 @@ sudo systemctl restart spinach-music-api</pre>
           </section>
         </div>
         <div class="action-grid">
-          <section class="info-panel">
+          <section class="info-panel action-panel">
+            <div class="action-icon" aria-hidden="true">↻</div>
             <h3>备份当前数据库</h3>
             <p>生成服务器本地 JSON 备份，适合每次批量导入、批量修改前执行。</p>
-            <button id="backupBtn" class="secondary-btn">立即备份</button>
+            <button id="backupBtn" class="action-btn"><span aria-hidden="true">＋</span>创建服务器备份</button>
             <p id="backupMessage" class="form-message"></p>
           </section>
-          <section class="info-panel">
+          <section class="info-panel action-panel">
+            <div class="action-icon" aria-hidden="true">↓</div>
             <h3>导出当前数据</h3>
             <p>下载当前数据库快照，便于本地留档、人工检查或发给开发继续排查。</p>
-            <button id="exportBtn" class="secondary-btn">下载 JSON</button>
+            <button id="exportBtn" class="action-btn secondary-action"><span aria-hidden="true">↓</span>下载 JSON 快照</button>
             <p id="exportMessage" class="form-message"></p>
           </section>
           <section class="info-panel">
@@ -487,6 +557,29 @@ sudo systemctl restart spinach-music-api</pre>
         <div class="modal-actions">
           <button type="submit" class="secondary-btn">保存修改</button>
           <p id="editMessage" class="form-message"></p>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="confirmOverlay" class="modal-overlay hidden">
+    <section class="confirm-panel">
+      <form id="confirmForm">
+        <div class="confirm-icon" aria-hidden="true">!</div>
+        <h3 id="confirmTitle">确认敏感操作</h3>
+        <p id="confirmDetail" class="confirm-detail"></p>
+        <label id="confirmReasonField" class="confirm-field hidden">
+          <span>取消原因</span>
+          <input id="confirmReason" autocomplete="off" />
+        </label>
+        <label class="confirm-field">
+          <span>后台登录密码</span>
+          <input id="confirmPassword" type="password" autocomplete="current-password" required placeholder="输入密码以确认本次操作" />
+        </label>
+        <p class="confirm-help">密码仅用于本次服务端校验，不会保存到页面。</p>
+        <div class="confirm-actions">
+          <button id="confirmCancelBtn" type="button" class="ghost-btn">返回检查</button>
+          <button id="confirmSubmitBtn" type="submit" class="danger-confirm-btn">确认操作</button>
         </div>
       </form>
     </section>

@@ -1,16 +1,25 @@
 import { request } from '../../utils/request';
 
-async function bindDemoProfile(role) {
+function applyLoginResult(role, result) {
   const app = getApp();
-  const result = await request('/auth/demo-login', { method: 'POST', data: { role } });
-  if (!result?.profile) return;
+  app.globalData.authToken = result.authToken || '';
+  app.globalData.currentUser = result.user || null;
+  wx.setStorageSync('roleAuthToken', app.globalData.authToken);
+  wx.setStorageSync('roleUser', app.globalData.currentUser);
+  wx.setStorageSync('roleProfile', result.profile);
   if (role === 'teacher') {
     app.globalData.teacherId = result.profile.id;
     app.globalData.campusId = result.profile.campus_id;
-  } else {
+  } else if (role === 'student') {
     app.globalData.studentId = result.profile.id;
     app.globalData.campusId = result.profile.campus_id;
   }
+}
+
+async function bindDemoProfile(role) {
+  const result = await request('/auth/demo-login', { method: 'POST', data: { role } });
+  if (!result?.profile) return;
+  applyLoginResult(role, result);
 }
 
 async function bindAuthorizedProfile(role) {
@@ -20,11 +29,12 @@ async function bindAuthorizedProfile(role) {
     student: '学生端登录',
     manager: '管理者端登录'
   }[role];
+  if (app.globalData.authToken && app.globalData.currentUser?.role === role) return true;
   const phone = await new Promise((resolve) => {
     wx.showModal({
       title,
       editable: true,
-      placeholderText: '请输入后台授权手机号',
+      placeholderText: role === 'manager' ? '请输入管理者授权手机号' : '开发巡检可输入 13800000010',
       confirmText: '登录',
       success: (res) => resolve(res.confirm ? (res.content || '').trim() : '')
     });
@@ -34,18 +44,14 @@ async function bindAuthorizedProfile(role) {
   if (!result?.profile) return false;
   if (role === 'manager') {
     app.globalData.authToken = result.authToken || '';
+    app.globalData.currentUser = result.user || null;
     app.globalData.manager = result.user;
-    wx.setStorageSync('managerAuthToken', app.globalData.authToken);
+    wx.setStorageSync('roleAuthToken', app.globalData.authToken);
+    wx.setStorageSync('roleUser', app.globalData.currentUser);
     wx.setStorageSync('managerProfile', result.user);
     return true;
   }
-  if (role === 'teacher') {
-    app.globalData.teacherId = result.profile.id;
-    app.globalData.campusId = result.profile.campus_id;
-  } else {
-    app.globalData.studentId = result.profile.id;
-    app.globalData.campusId = result.profile.campus_id;
-  }
+  applyLoginResult(role, result);
   return true;
 }
 

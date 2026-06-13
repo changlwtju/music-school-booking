@@ -38,6 +38,10 @@ export function request(path, options = {}) {
         } else if (res.statusCode === 404 && path.startsWith('/admin')) {
           mockRequest(path, options).then(resolve);
         } else {
+          if (options.silent) {
+            resolve(null);
+            return;
+          }
           wx.showToast({ title: res.data?.error?.message || '请求失败', icon: 'none' });
           resolve(null);
         }
@@ -47,11 +51,13 @@ export function request(path, options = {}) {
           mockRequest(path, options).then(resolve);
           return;
         }
-        wx.showModal({
-          title: '无法连接服务器',
-          content: networkErrorMessage(err),
-          showCancel: false
-        });
+        if (!options.silent) {
+          wx.showModal({
+            title: '无法连接服务器',
+            content: networkErrorMessage(err),
+            showCancel: false
+          });
+        }
         resolve(null);
       }
     });

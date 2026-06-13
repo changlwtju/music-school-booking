@@ -86,18 +86,18 @@ function main() {
     id: stableId('campus', '二店', '菠菜现代音乐二店（融创上城）'),
     name: '菠菜现代音乐二店（融创上城）',
     short_name: '二店',
-    address: '地址待管理后台补充',
+    address: '长春市高新区融创上城二期别墅区',
     phone: '请联系校区老师',
     latitude: null,
     longitude: null,
     hours: '周二至周日 12:00-20:00',
     image: '/assets/brand/brand-display.png',
     release_time: '20:00',
-    desc: '来源：二店学员信息.xlsx；详细地址待补充',
+    desc: '来源：二店学员信息.xlsx；位于融创上城二期别墅区',
     status: 'active',
     display_order: 2,
     contact_person: '',
-    map_keyword: ''
+    map_keyword: '长春市高新区融创上城二期别墅区'
   };
   upsertById(database.campuses, secondCampus);
 
