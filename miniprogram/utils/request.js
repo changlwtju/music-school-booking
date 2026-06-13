@@ -2,6 +2,22 @@ import { mockRequest } from './mock';
 
 const app = getApp();
 
+function canUseMock(path) {
+  return !path.startsWith('/auth/') && !path.startsWith('/manager/');
+}
+
+function networkErrorMessage(err) {
+  const detail = String(err?.errMsg || '');
+  const apiBase = String(app.globalData.apiBase || '');
+  if (apiBase.startsWith('http://')) {
+    return '真机无法访问 HTTP 接口，请配置 HTTPS 合法域名';
+  }
+  if (/domain|url not in domain list/i.test(detail)) {
+    return '接口域名未加入微信小程序 request 合法域名';
+  }
+  return detail ? `网络请求失败：${detail}` : '网络请求失败，请检查接口域名';
+}
+
 export function request(path, options = {}) {
   const apiBase = app.globalData.apiBase;
   if (!apiBase) {
@@ -26,8 +42,17 @@ export function request(path, options = {}) {
           resolve(null);
         }
       },
-      fail() {
-        mockRequest(path, options).then(resolve);
+      fail(err) {
+        if (canUseMock(path)) {
+          mockRequest(path, options).then(resolve);
+          return;
+        }
+        wx.showModal({
+          title: '无法连接服务器',
+          content: networkErrorMessage(err),
+          showCancel: false
+        });
+        resolve(null);
       }
     });
   });
